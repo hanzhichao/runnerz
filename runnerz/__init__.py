@@ -1,106 +1,206 @@
-import os
-from string import Template
-from collections import ChainMap
-
 import yaml
-import requests
+import os
+from collections import ChainMap, namedtuple
 
-# 步骤定义
-CONFIG = 'config'  # 配置关键字  settings
-STEPS = 'tests'  # 步骤关键字  steps/teststeps/testcases
-
-NAME = 'name'  # 名称
-VAIABLES = 'variables'  # 用户自定义变量关键字
-BASEURL = 'baseurl'
-REQUEST = 'request'  # 请求配置,请求数据关键字
-CHECK = 'verify'  # 验证关键字  check/validate/assert
-EXTRACT = 'extract'   # 提取关键字 output/register
-SKIP = 'skip'  # 跳过步骤关键字
-TIMES = 'times'  # 循环步骤关键字  circle
+from string import Template
+from jsonpath import jsonpath
+from actions import request
+# import chrome
 
 
-def run(data):
-    # 解析配置
-    session = requests.session()
-    config = data.get(CONFIG)
-    if config:
-        name = config.get(NAME)
-        variables = config.get(VAIABLES, {})
-        baseurl = config.get(BASEURL)
-        request = config.get(REQUEST)
-        if request:
-            for key, value in request.items():
-                session.__setattr__(key, value)
-        print('执行用例:', name)
 
-    # 上下文变量
-    context = ChainMap(variables, os.environ)
-    # 解析步骤
-    context['steps'] = []  # 用于保存所有步骤的请求和响应, 便于跨步骤引用
-    steps = data.get(STEPS) 
-    for step in steps:
-        step_name = step.get(NAME)
-        skip = step.get(SKIP)
-        times = step.get(TIMES, 1)
-        request = step.get(REQUEST)
-        if skip or not request:
-            print(' 跳过步骤:', step_name)
-            continue
+def parse_func_args(func_args, context):
+    indent = ' ' * 6
+    print(f'{indent}解析参数: {func_args}')
+    if not func_args:
+        return func_args
 
-        for i in range(times):
-            print(' 执行步骤:', step_name, f'第{i+1}轮' if step.get(TIMES) else '')
-            # 请求$变量解析
-            if not request:
-                continue
-            request_str = yaml.dump(request, default_flow_style=False)  # 先转为字符串
-            if '$' in request_str:
-                request_str = Template(request_str).safe_substitute(context)  # 替换${变量}为varables中的同名变量
-                request = yaml.safe_load(request_str)  # 重新转为字典
-            # 设置默认请求方法
-            if request.get('data') or request.get('json') or request.get('files'):
-                request.setdefault('method', 'post')
-            else:
-                request.setdefault('method', 'get')
-            # 组装baseurl
-            if baseurl:
-                url = request.get('url')
-                if not url.startswith('http'):
-                    request['url'] = '/'.join((baseurl.rstrip('/'), url.lstrip('/')))
+    if isinstance(func_args, str):
+        func_args_string = func_args
+    elif isinstance(func_args, (list, tuple, dict)):
+        func_args_string = yaml.dump(func_args, default_flow_style=False)
 
-            # 发送请求
-            print('  请求url:', request.get('url'))  # print(' 发送请求:', request)
-            response = session.request(**request)  # 字典解包，发送接口
-            print('  状态码:', response.status_code)  # print(' 响应数据:', response.text)
+    if '$' not in func_args_string:
+        return func_args
 
-            # 注册上下文变量
-            step_result = dict(
-                request=request,
-                response=response,
-                status_code=response.status_code,
-                response_text=response.text,
-                response_headers=response.headers,
-                response_time=response.elapsed.seconds
-            )
-            context['steps'].append(step_result)  # 保存步骤结果
-            context.update(step_result)  # 将最近的响应结果更新到上下文变量中
-
-            # 提取变量
-            extract = step.get(EXTRACT)
-            if extract is not None:  # 如果存在extract
-                for key, value in extract.items():
-                    print("  提取变量:", key, value)
-                    # 计算value表达式，可使用的全局变量为空，可使用的局部变量为RESPONSE(响应对象)
-                    context[key] = eval(value, {}, context)  # 保存变量结果到上下文中
-            # 处理断言
-            check = step.get(CHECK)
-            if check and isinstance(check, list):
-                for line in check:
-                    result = eval(line, {}, context)  # 计算断言表达式，True代表成功，False代表失败
-                    print("  处理断言:", line, "结果:", "PASS" if result else "FAIL")
-    return context['steps']
+    values = ChainMap(context.get('args', {}), context.get('variables', {}), context.get('defaults', {}))
+    # print(f'{indent}values值: {values}')
+    # print('func_args_string', func_args_string)
+    func_args_string = Template(func_args_string).safe_substitute(values)
+    # print('func_args_string', func_args_string)
+    func_args = yaml.safe_load(func_args_string)
+    print(f'{indent}解析后的参数: {func_args}')
+    return func_args
 
 
-if __name__ == "__main__":
-    with open('data.yml', encoding='utf-8') as f:
+def do_func(func, func_args, context):
+    if not func:
+        return
+    result = context.get('result', [])
+    stage_index = context.get('stage_index', 0)
+    step_index = context.get('step_index', 0)
+    func_hook = context.get('func_hook', print)
+    indent = ' ' * 6
+    try:
+        print(f'{indent}调用函数: {func.__name__} 参数: {func_args}')
+        if isinstance(func_args, dict):
+            func_args['context'] = context
+            func_result = func(**func_args)
+        elif isinstance(func_args, (list, tuple)):
+            # func_args.append(context)
+            func_result = func(func_args, context)
+            # func_result = func(*func_args)
+        else:
+            func_result = func(func_args, context)
+    except Exception as ex:
+        raise ex
+    else:
+        print(f'{indent}调用结果: {func_result}')
+        print(f'{indent}响应内容: {func_result.json()}')  # todo remove
+        context['response'] = func_result  # todo remove
+        result[stage_index][step_index][func_hook] = func_result
+
+
+def pop_pre_post(func_args):
+    _pre = None
+    _post = None
+    if isinstance(func_args, dict):
+        if '_pre' in func_args:
+            _pre = func_args.pop('_pre')
+        if '_post' in func_args:
+            _post = func_args.pop('_post')
+    return _pre, _post
+
+
+def parse_func(func_hook, context):
+    functions = context.get('functions', {})
+    if '.' not in func_hook:
+        func = functions.get(func_hook)
+    else:
+        func_path = func_hook.split('.')
+        func_base = functions.get(func_path[0])
+        if not func_base:
+            raise ValueError(f'找不到指定的hook方法: {func_base}')
+
+        func = func_base
+
+        for attr in func_path[1:]:
+            if not hasattr(func, attr):
+                raise ValueError('func没有属性attr')
+            func = getattr(func, attr)
+
+    if not callable(func):
+        raise TypeError(f'func: {func} 不是callable')
+    return func
+
+def do_pre(_pre, context):
+    if not _pre:
+        return
+    indent = ' ' * 4
+    print(f'{indent}执行pre', _pre)
+
+
+def do_post(_post, context):
+    if not _post:
+        return
+    indent = ' ' * 4
+    print(f'{indent}执行post', _post)
+    if not isinstance(_post, list):
+        raise TypeError('_post应为列表格式')
+
+    for step in _post:  # todo 合并
+        if not isinstance(step, dict):
+            raise TypeError('step只支持字典格式')
+
+        for func_hook, func_args in step.items():
+            indent = ' ' * 6
+            print(f'{indent}解析函数: {func_hook} 参数: {func_args}')
+
+            context['func_hook'] = func_hook
+
+            func = parse_func(func_hook, context)
+            func_args = parse_func_args(func_args, context)
+
+            do_func(func, func_args, context)
+
+
+def do_step(step, context):
+
+    if not isinstance(step, dict):
+        raise TypeError('step只支持字典格式')
+
+    stage_index = context.get('stage_index', 0)
+    step_index = context.get('step_index', 0)
+    indent = ' ' * 4
+    print(f'{indent}执行step: {stage_index+1}.{step_index+1}')
+
+    context['result'][stage_index].append({})
+
+    for func_hook, func_args in step.items():
+        indent = ' ' * 6
+        print(f'{indent}解析函数: {func_hook} 参数: {func_args}')
+
+        context['func_hook'] = func_hook
+
+        func = parse_func(func_hook, context)
+        func_args = parse_func_args(func_args, context)
+        _pre, _post = pop_pre_post(func_args)
+
+        do_pre(_pre, context)
+        do_func(func, func_args, context)
+        do_post(_post, context)
+
+
+def do_steps(steps, context):
+    if not isinstance(steps, list):
+        raise TypeError('steps只支持列表格式')
+
+    for step_index, step in enumerate(steps):
+        context['step_index'] = step_index
+        do_step(step, context)
+
+
+def do_stage(stage, context):
+    stage_index = context.get('stage_index')
+    indent = ' ' * 2
+    print(f'{indent}执行stage: {stage_index+1}')
+
+    context['result'].append([])
+
+    steps = stage.get('steps', [])
+    do_steps(steps, context)
+
+
+def do_stages(stages, context):
+    if not isinstance(stages, list):
+        raise TypeError('steps只支持列表格式')
+
+    for stage_index, stage in enumerate(stages):
+        context['stage_index'] = stage_index
+        do_stage(stage, context)
+
+
+def main(data):
+    name = data.get('name')
+    functions = dict(request=request)
+
+    # defaults = dict(env=os.environ)
+    defaults = dict()
+    args = dict(username='abc', password=123)
+    variables = data.get('variables', {})
+    # values = ChainMap(args, variables, defaults)
+    result = []
+    context = locals()
+
+    stages = data.get('stages', [])
+    print(f'执行pipline: {name}')
+    do_stages(stages, context)
+    return context['result']
+
+
+if __name__ == '__main__':
+    with open('/Users/apple/Documents/Projects/Self/StepRunner/httpbird/httpbird/pipline.yaml',
+              encoding='utf-8') as f:
         data = yaml.safe_load(f)
-    run(data)
+
+    main(data)
