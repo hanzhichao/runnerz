@@ -1,0 +1,119 @@
+{
+	"id": "ae047953-f53f-4736-8281-ddb249e44ad6",
+	"name": "workflow3",
+	"description": "",
+	"auth": null,
+	"events": null,
+	"variables": [],
+	"order": [
+		"5b10cb83-4bfa-461e-9f4c-e45d856ac8d5",
+		"f2d2c20c-271b-4f29-9772-bf3d54d54b45"
+	],
+	"folders_order": [],
+	"folders": [],
+	"requests": [
+		{
+			"id": "5b10cb83-4bfa-461e-9f4c-e45d856ac8d5",
+			"name": "创建订单",
+			"url": "http://115.28.108.130:5000/api/order/create/?user_id=123&goods_id=123&num=2&amount=20.0",
+			"description": null,
+			"data": null,
+			"dataMode": null,
+			"headerData": [],
+			"method": "GET",
+			"pathVariableData": [],
+			"queryParams": [
+				{
+					"key": "user_id",
+					"value": "123",
+					"equals": true,
+					"description": null,
+					"enabled": true
+				},
+				{
+					"key": "goods_id",
+					"value": "123",
+					"equals": true,
+					"description": null,
+					"enabled": true
+				},
+				{
+					"key": "num",
+					"value": "2",
+					"equals": true,
+					"description": null,
+					"enabled": true
+				},
+				{
+					"key": "amount",
+					"value": "20.0",
+					"equals": true,
+					"description": null,
+					"enabled": true
+				}
+			],
+			"auth": null,
+			"events": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "39a1c963-7af0-45f8-a1dd-0e2c3cf9e12e",
+						"exec": [
+							"var jsonData = pm.response.json()",
+							"",
+							"pm.globals.set(\"order_id\", jsonData.order_id);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"folder": null,
+			"headers": "",
+			"pathVariables": {}
+		},
+		{
+			"id": "f2d2c20c-271b-4f29-9772-bf3d54d54b45",
+			"name": "获取订单结果",
+			"url": "http://115.28.108.130:5000/api/order/get_result/?order_id={{order_id}}",
+			"description": null,
+			"data": null,
+			"dataMode": null,
+			"headerData": [],
+			"method": "GET",
+			"pathVariableData": [],
+			"queryParams": [
+				{
+					"key": "order_id",
+					"value": "{{order_id}}",
+					"equals": true,
+					"description": null,
+					"enabled": true
+				}
+			],
+			"auth": null,
+			"events": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "3aec904f-f977-47c4-8523-90720ed75f37",
+						"exec": [
+							"function loop(){",
+							"    postman.setNextRequest(\"获取订单结果\")",
+							"}",
+							"",
+							"if(pm.response.text() == \"{}\\n\"){",
+							"    setTimeout(loop, 5000);",
+							"}",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"folder": null,
+			"headers": "",
+			"pathVariables": {}
+		}
+	]
+}

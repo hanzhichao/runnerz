@@ -1,0 +1,80 @@
+- config:
+    name: TestClass_API
+    description: Flask接口依赖测试
+    variables:
+    base_url:
+    hooks:
+      setup_hooks:
+        - ${hook_test()}
+      teardown_hooks:
+        - ${hook_teardown_cls()}
+
+- teststep:
+    name: DepenceOne
+    description: 测试接口A1==>获取变量One
+    request:
+        headers:
+            User-Agent: ${ua_random()}
+        contentType:
+        data:
+        extract:
+            - One
+        method: get
+        url: http://localhost:9998/DepenceOne
+    check:
+      assertEqual:
+        status: 200
+      assertIn:
+        content:
+          - One
+    setup_hooks:
+      - ${hook_test()}
+    teardown_hooks:
+      - ${hook_teardown_cls()}
+
+- teststep:
+    name: DepenceTwo
+    description: 测试接口A2==>获取变量Two
+    request:
+        url: http://localhost:9998/DepenceTwo
+        headers:
+            Content-Type: application/json
+            User-Agent: ${ua_random()}
+        contentType: json
+        data:
+           One: $One
+           test: ${test($One)}
+           test2: 123
+        method: post
+        extract:
+            - Two
+    check:
+      assertEqual:
+        status: 300
+      assertIn:
+        content:
+          - Two
+    setup_hooks:
+      - ${hook_test()}
+    teardown_hooks:
+      - ${hook_teardown_cls()}
+
+- teststep:
+    name: DepenceThr
+    description: 测试接口A3==>获取变量Thr
+    request:
+        headers:
+            User-Agent: ${ua_random()}
+        contentType:
+        data:
+        method: get
+        extract:
+            - Thr
+        url: http://localhost:9998/DepenceThr
+    check:
+      assertEqual:
+        status: 200
+      assertIn:
+        content:
+          - Thr
+    cycles: 5

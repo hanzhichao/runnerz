@@ -1,0 +1,117 @@
+{
+	"info": {
+		"_postman_id": "ae047953-f53f-4736-8281-ddb249e44ad6",
+		"name": "workflow3",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "创建订单",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "39a1c963-7af0-45f8-a1dd-0e2c3cf9e12e",
+						"exec": [
+							"var jsonData = pm.response.json()",
+							"",
+							"pm.globals.set(\"order_id\", jsonData.order_id);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://115.28.108.130:5000/api/order/create/?user_id=123&goods_id=123&num=2&amount=20.0",
+					"protocol": "http",
+					"host": [
+						"115",
+						"28",
+						"108",
+						"130"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"order",
+						"create",
+						""
+					],
+					"query": [
+						{
+							"key": "user_id",
+							"value": "123"
+						},
+						{
+							"key": "goods_id",
+							"value": "123"
+						},
+						{
+							"key": "num",
+							"value": "2"
+						},
+						{
+							"key": "amount",
+							"value": "20.0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "获取订单结果",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "3aec904f-f977-47c4-8523-90720ed75f37",
+						"exec": [
+							"function loop(){",
+							"    postman.setNextRequest(\"获取订单结果\")",
+							"}",
+							"",
+							"if(pm.response.text() == \"{}\\n\"){",
+							"    setTimeout(loop, 5000);",
+							"}",
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://115.28.108.130:5000/api/order/get_result/?order_id={{order_id}}",
+					"protocol": "http",
+					"host": [
+						"115",
+						"28",
+						"108",
+						"130"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"order",
+						"get_result",
+						""
+					],
+					"query": [
+						{
+							"key": "order_id",
+							"value": "{{order_id}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

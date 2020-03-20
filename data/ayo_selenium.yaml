@@ -1,0 +1,32 @@
+- config:
+    name: Baidu_Demo
+    description: 百度页面测试
+    variables:
+    driver:
+      over_time: 5
+      time_span: 1
+      driver_name: chrome
+    hooks:
+      setUpClass:
+      tearDownClass:
+
+- teststep:
+  - info: open_url
+    description: 打开百度首页
+    path: /
+    operate_type: start
+
+  - info: click_search
+    description: 点击搜索按钮
+    element: //*[@id="su"
+    find_type: xpath
+    operate_type: click
+
+  - info: get_title
+    description: 获取页面标题
+    operate_type: title
+    check:
+
+  - info: quit
+    description: 关闭浏览器
+    operate_type: quit

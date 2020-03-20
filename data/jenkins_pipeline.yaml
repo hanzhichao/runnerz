@@ -1,0 +1,25 @@
+option: {}
+enviroment: {}
+agent: any
+parameters:
+    mark:
+        type: string
+        description: 标记
+        default: smoke
+    path:
+        type: choice
+        choices:
+            - a
+            - b
+        description: 路径选择
+        default: a
+triggers:
+    cron: H/1 * * * *
+stages:
+    阶段1:
+        - sh 'echo hello'
+    阶段2:
+        - sh 'echo world'
+post: 
+    always:
+        - sh 'always do ...'
