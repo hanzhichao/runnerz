@@ -6,6 +6,7 @@ import threading
 import random
 import re
 import json
+import operator
 
 import yaml
 import requests
@@ -141,7 +142,19 @@ class Step(Base):
         # 处理断言
         results = []
         for line in self.check:
-            result = eval(line, {}, self.context)  # 计算断言表达式，True代表成功，False代表失败
+            if isinstance(line, str):
+                result = eval(line, {}, self.context)  # 计算断言表达式，True代表成功，False代表失败
+            elif isinstance(line, dict):
+                for key, value in line.items():
+                    if hasattr(operator, key):
+                        func = getattr(operator, key)
+                        items = []
+                        for item in value:
+                            if isinstance(item, str):
+                                item = self.context.get(item, item)
+                            items.append(item)
+
+                        result = func(*items)
             print("   处理断言:", line, "结果:", "PASS" if result else "FAIL")
             results.append(result)
         if not all(results):
@@ -239,7 +252,10 @@ class Http(Step):
             status_code=response.status_code,
             response_text=response.text,
             response_headers=response.headers,
-            response_time=response.elapsed.seconds
+            response_time=response.elapsed.seconds,
+            xpath=lambda expr: find_by_xpath(response.text, expr),
+            jsonpath=lambda expr: find_by_jsonpath(response.text, expr),
+            re=lambda expr: find_by_re(response.text, expr)
         )
         self.context['steps'].append(step_result)  # 保存步骤结果
         self.context.update(step_result)  # 将最近的响应结果更新到上下文变量中
