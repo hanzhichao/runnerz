@@ -1,0 +1,60 @@
+{
+    "name": {"type": "string"},
+    "config": {
+        "type": "object",
+        "properties": {
+            "baseurl": {"type": "string"},
+            "request": {
+                "type": "object",
+                "properties": {
+                    "headers": {"type": "object"},
+                    "cookies": {"type": "object"},
+                    "params": {"type": "object"},
+                    "timeout": {"type": "number"},
+                    "auth": {"type": "array"},
+                    "verfiy": {"type": "boolean"}
+                }
+            },
+            "variables": {"type": "object"},
+            "args": {"type": "object"}
+        }
+    },
+    "stages": {
+        "type": "array",
+        "required": ["steps"],
+        "items": {
+            "name": {"type": "string"},
+            "tags": {"type": "array"},
+            "run_type": {"type": "string"},
+            "steps": {
+                "type": "array",
+                "items": {
+                    "name": {"type": "string"},
+                    "action": {"type": "string"},
+                    "skip": {"type": "boolean"},
+                    "times": {"type": "number"},
+                    "concurrency": {"type": "number"},
+                    "request": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": "string"},
+                            "method": {"type": "string"},
+                            "headers": {"type": "object"},
+                            "cookies": {"type": "object"},
+                            "params": {"type": "object"},
+                            "data": {"type": "object"},
+                            "json": {"type": "object"},
+                            "files": {"type": "object"},
+                            "auth": {"type": "array"},
+                            "verify": {"type": "boolean"},
+                            "timeout": {"type": "number"}
+                        }
+                    },
+                    "check": {"type": "array"},
+                    "extract": {"type": "object"}
+
+                }
+            }
+        }
+    }
+}

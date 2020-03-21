@@ -13,11 +13,15 @@ import requests
 from jsonpath import jsonpath
 from lxml import etree
 from lxml.etree import HTMLParser
+from jsonschema import validate
 
 from logz import log
 
 log.format = '%(asctime)s %(threadName)s %(levelname)s %(message)s'
 print = log.info
+
+BASEDIR = os.path.dirname(os.path.dirname(__file__))
+SCHEMA_FILE = os.path.join(BASEDIR, 'schema.json')
 
 # 步骤定义
 CONFIG = 'config'  # 配置关键字  settings
@@ -312,6 +316,13 @@ class Flow(Base):
         self.variables = self.config.get(VAIABLES, {})
         self.context = ChainMap(self.variables, os.environ)
         self.context[CONFIG] = self.config
+        self._validate()
+
+    def _validate(self):
+        with open(SCHEMA_FILE) as f:
+            schema = json.load(f)
+
+        validate(instance=self.data, schema=schema)
 
     def _run(self):
         print('执行流程:', self.name)

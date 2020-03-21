@@ -1,5 +1,10 @@
+name: test
 config:
-  name: test
+  baseurl: "https://httpbin.org"
+  request:
+    headers:
+      x-text: hello
+    timeout: 30
   variables:
     a: 1
     b: [a,b,c]
@@ -9,10 +14,10 @@ config:
 
 stages:
   - name: httpbin get
-    tags: hello
+    tags: [hello]
     run_type: random  # parallel/sequence/random
     steps:
-      - name: æ­¥éª¤1
+      - name: 步骤1
         action: request
         # skip: True
         request:
@@ -20,13 +25,14 @@ stages:
           method: get
           params: {a: $a, username: $username, password: $password}
         check:
-          - result.status_code == 200
+          - response.status_code == 200
+          - eq: [status_code, 200]
         extract:
-          url: result.json()['url']
-      - name: æ­¥éª¤2
+          url: response_json['url']
+      - name: 步骤2
         action: request
-        run_type: parallel
-        times: 3
+        concurrency: 2
+        times: 4
         request:
           url: https://httpbin.org/post
           method: post
