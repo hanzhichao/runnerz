@@ -17,34 +17,15 @@ from jsonschema import validate
 
 from logz import log
 
+from runnerz.keywords import *
+from runnerz.plugins.http import Http
+
+
 log.format = '%(asctime)s %(threadName)s %(levelname)s %(message)s'
 print = log.info
 
 BASEDIR = os.path.dirname(os.path.dirname(__file__))
 SCHEMA_FILE = os.path.join(BASEDIR, 'schema.json')
-
-# 步骤定义
-CONFIG = 'config'  # 配置关键字  settings
-STAGES = 'stages'
-STEPS = 'steps'  # 步骤关键字  steps/teststeps/testcases
-
-NAME = 'name'  # 名称
-VAIABLES = 'variables'  # 用户自定义变量关键字
-RUN_TYPE = 'run_type'  # stage中steps运行方式
-BASEURL = 'baseurl'
-REQUEST = 'request'  # 请求配置,请求数据关键字
-CHECK = 'check'  # 验证关键字  check/validate/assert
-EXTRACT = 'extract'   # 提取关键字 output/register
-SKIP = 'skip'  # 跳过步骤关键字
-TIMES = 'times'  # 循环步骤关键字  circle
-ACTION = 'action'  # 步骤类型 operation/keywords/function/target
-
-CONCURRENCY = 'concurrency'
-
-# 上下文变量
-POLL = '_poll'  # 线程池  废弃
-SESSION = '_session'  # 请求会话
-CONFIG = '_config'  # 配置
 
 
 class MyThread(threading.Thread):
@@ -58,35 +39,6 @@ class MyThread(threading.Thread):
     def run(self):
         self.result = self.func(*self.args, **self.kwargs)  # 为线程添加属性result存储运行结果
 
-
-def find_by_jsonpath(text, expr):
-    try:
-        res_dict = json.loads(text)
-    except Exception as ex:
-        log.exception(ex)
-        return
-    result = jsonpath(res_dict, expr)
-    if result and len(result) == 1:
-        return result[0]
-    return result
-
-
-def find_by_re(text, expr):
-    result = re.findall(expr, text)
-    if result and len(result) == 1:
-        return result[0]
-    return result
-
-
-def find_by_xpath(text, expr):
-    try:
-        html = etree.HTML(text, etree.HTMLParser())
-        result = html.xpath('expr')
-    except Exception:
-        result = False
-    if result and len(result) == 1:
-        return result[0]
-    return result
 
 
 class Base(object):  # 节点通用
@@ -210,67 +162,6 @@ class Step(Base):
 
     def process(self):
         pass
-
-
-class Http(Step):
-    def __init__(self, step, context):
-        super().__init__(step, context)
-        self.baseurl = self.config.get(BASEURL)
-        context.setdefault(SESSION, requests.session())
-        self.session = context.get(SESSION)
-
-        request = self.config.get(REQUEST)
-        if request:
-            for key, value in request.items():
-                self.session.__setattr__(key, value)
-
-    def set_default_method(self, request):
-        if request.get('data') or request.get('json') or request.get('files'):
-            request.setdefault('method', 'post')
-        else:
-            request.setdefault('method', 'get')
-
-    def pack_url(self, request):
-        if not self.baseurl:
-            return
-        url = request.get('url')
-        if not url.startswith('http'):
-            request['url'] = '/'.join((self.baseurl.rstrip('/'), url.lstrip('/')))
-
-    def send_request(self, request):
-        # 发送请求
-        print('   请求url:', request.get('url'))  # print(' 发送请求:', request)
-        response = self.session.request(**request)  # 字典解包，发送接口
-        print('   状态码:', response.status_code)  # print(' 响应数据:', response.text)
-
-        try:
-            res_dict = response.json()
-        except Exception:
-            res_dict = {}
-
-        # 注册上下文变量
-        step_result = dict(
-            request=request,
-            response=response,
-            response_json=res_dict,
-            status_code=response.status_code,
-            response_text=response.text,
-            response_headers=response.headers,
-            response_time=response.elapsed.seconds,
-            xpath=lambda expr: find_by_xpath(response.text, expr),
-            jsonpath=lambda expr: find_by_jsonpath(response.text, expr),
-            re=lambda expr: find_by_re(response.text, expr)
-        )
-        self.context['steps'].append(step_result)  # 保存步骤结果
-        self.context.update(step_result)  # 将最近的响应结果更新到上下文变量中
-        return response
-
-    def process(self):
-        request = self.step.get(REQUEST)
-        request = self.parse(request)
-        self.set_default_method(request)
-        self.pack_url(request)
-        return self.send_request(request)
 
 
 class Stage(Base):  # steps
