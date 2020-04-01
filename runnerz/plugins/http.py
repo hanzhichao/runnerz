@@ -1,5 +1,7 @@
 import requests
 from runnerz import Step
+from runnerz.keywords import *
+from runnerz.find import find_by_xpath, find_by_jsonpath, find_by_re   # todo 移动到requestz中
 
 
 class Http(Step):
