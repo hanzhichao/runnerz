@@ -27,7 +27,8 @@ stages:
     steps:
       - name: 步骤1
         action: request
-        # skip: True
+        skip: True
+        times: 3
         request:
           url: /get
           method: get

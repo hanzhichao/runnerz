@@ -25,7 +25,12 @@ simple runner like httprunner
 - [ ] options
 - [ ] add options ini
 - [ ] trigger
-
+- [x] unittest用例
+- [ ] har
+- [ ] 运行postman
+- [ ] 运行jmeter
+- [ ] 运行robot
+- [ ] timeout限制
 
 
 Base基类负责
@@ -56,3 +61,6 @@ Request具体步骤负责
 ## Todo
 * 尝试使用模板组装形式
 * config中setup teardown variables不支持$变量
+
+
+为每个关键字处理写个方法
