@@ -3,9 +3,10 @@ from abc import ABCMeta, abstractmethod
 from collections import ChainMap
 
 from logz import log, logit
+log.level = 'info'
 
 from runnerz.keywords import *
-from runnerz.utils import merge_update, parse, get_fixtures
+from runnerz.utils import merge_update, parse, get_fixtures, do_check, do_extract
 from runnerz.thread import MyThread
 
 
@@ -31,20 +32,25 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         self.times = data.get(TIMES, 1)  # 3 or rerun  (3, 1, 'on_fail/on_error/always')
         self.concurrency = data.get(CONCURRENCY)
 
+        self.pre_steps = []
+        self.sub_steps = None
+        self.post_steps = []
         self.result = None
         self.status = None
 
         self.context = context
-
         self.config_context(context)  # 1. 初始化上下文
 
         self.data = parse(data, self.context)  # 2. 数据解析
         self.setup_hooks = self.data.get(SETUP_HOOKS) or self.config.get(SETUP_HOOKS)
         self.teardown_hooks = self.data.get(TEARDOWN_HOOKS) or self.config.get(TEARDOWN_HOOKS)
-        self.pre_steps = []
-        self.post_steps = []
-        self.handle_fixtures(self.setup_hooks, self.pre_steps)
+        self.check = data.get(CHECK)
+        self.extract = data.get(EXTRACT)
+
+        self.handle_extract_check()  # 3. 将check/extra添加到post_steps
+        self.handle_fixtures(self.setup_hooks, self.pre_steps)  # 4. 将setup/teardown添加到pre/post_steps
         self.handle_fixtures(self.teardown_hooks, self.post_steps)
+
 
     def merge_config(self):
         """融合各个步骤/步骤组中的配置"""
@@ -73,6 +79,13 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         self.merge_config()
         self.merge_variables()
 
+    def handle_extract_check(self):
+        if self.extract:
+            self.post_steps.append(dict(target=do_check, args=self.extract))
+
+        if self.check:
+            self.post_steps.append(dict(target=do_check, args=self.check))
+
     def handle_fixtures(self, data, steps):
         fixtures = self.context.get(FIXTURES, {})
         if data:
@@ -87,6 +100,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
                 for key, value in step.items():
                     function = fixtures.get(key)
                     steps.append(dict(target=function, args=value))
+
 
     def do_pre_steps(self):
         log.debug(f'执行前置步骤: {self.pre_steps}')
@@ -115,7 +129,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         for i in range(times):
             log.info('执行步骤:', self.name, f'第{i+1}轮 并发量: {self.concurrency}' if self.times > 1 else '')
 
-            threads = [MyThread(self.run) for i in range(self.concurrency)]
+            threads = [MyThread(self.run, self.data, self.context) for i in range(self.concurrency)]
             [t.start() for t in threads]
             [t.join() for t in threads]
             results.extend([t.result for t in threads])
@@ -130,9 +144,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         return results
 
     def should_skip(self):
-        print('i run ---------')
         skip = self.skip
-        print(skip)
         if isinstance(skip, str):
             try:
                 skip = eval(skip)
@@ -141,14 +153,12 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
                 log.info('跳过步骤:', self.name, '原因: skip表达式出错')
                 return True
         if skip:
-            log.info('跳过步骤:', self.name, '原因: {self.skip}')
-        print(skip)
+            log.info('跳过步骤:', self.name, f'原因: skip={self.skip}')
         return skip
 
     def __call__(self, *args, **kwargs):
         if self.should_skip():
             return
-        print(self.times, self.concurrency)
         run_function = self.parallel_run if self.concurrency else self.sequence_run
         try:
             pre_results = self.do_pre_steps()
