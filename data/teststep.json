@@ -1,0 +1,24 @@
+{
+  "name": "测试步骤1",
+  "skip": false,
+  "config": {
+    "base_url": "https://httpbin.org",
+    "request": {
+      "headers": {
+        "x-test": "abc123"
+      },
+      "timeout": 30
+    },
+    "variables": {
+      "a": "12"
+    }
+  },
+  "request": {
+    "method": "get",
+    "url": "/get",
+    "params": {
+      "a": 1,
+      "b": 2
+    }
+  }
+}

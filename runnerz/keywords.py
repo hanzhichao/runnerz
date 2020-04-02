@@ -13,6 +13,9 @@ TIMES = 'times'  # 循环步骤关键字  circle
 CONCURRENCY = 'concurrency'
 TIMEOUT = 'timeout'
 
+SETUP_HOOKS = 'setup_hooks'
+TEARDOWN_HOOKS = 'teardown_hooks'
+
 
 # 步骤组 -------------------------------
 RUN_MODE = 'run_type'  # stage中steps运行方式
@@ -29,6 +32,7 @@ CONTEXT = 'context'
 
 # 上下文变量
 POLL = 'poll'  # 线程池  废弃
-SESSION = 'session'  # 请求会话
+REQUEST_SESSION = 'request_session'  # 请求会话
 # CONFIG = '_config'  # 配置
 FUNCTIONS = 'functions'
+FIXTURES = 'fixtures'

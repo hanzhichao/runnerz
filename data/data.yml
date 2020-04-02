@@ -15,6 +15,10 @@ config:
   args:
     username: {type: string}
     password: {type: password}
+  setup_hooks:
+    - print_me: hello
+  teardown_hooks:
+    - print_me: world
 
 stages:
   - name: httpbin get
@@ -25,7 +29,7 @@ stages:
         action: request
         # skip: True
         request:
-          url: https://httpbin.org/get
+          url: /get
           method: get
           params: {a: $a, username: $username, password: $password}
         check:

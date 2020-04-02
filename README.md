@@ -1,21 +1,58 @@
-## 已完成功能
-1. 表单类接口
-2. REST接口
-3. GET/POST请求
-4. session依赖
-5. 中间变量
-6. 断言
+# Runnerz
+
+simple runner like httprunner
+
+## 特性
+- [x] HTTP默认配置
+- [ ] 用户自定义变量
+- [ ] 环境变量
+- [ ] .env支持
+- [ ] 并发及多轮
+- [ ] 重跑
+- [ ] 步骤组并行运行
+- [x] setup_hook/teardown_hook
+- [x] eq断言
+- [ ] schema断言
+- [x] xpath/jsonpath/re提取
+- [ ] css selector提取
+- [ ] 根据条件跳过用例
+- [ ] 测试报告
+- [x] merge config
+- [x] 多级steps
+- [ ] 支持ddt
+- [ ] 支持if/else/switch/while
+- [ ] args
+- [ ] options
+- [ ] add options ini
+- [ ] trigger
 
 
-##待完成功能
-1. 测试模式
-    1. verbose = 1: 只显示PASS or FAIL
-    2. verbose = 2: 只显示resp.text
-    3. verbose = 3: 显示 请求, 响应, 断言 
-2. 签名
+
+Base基类负责
+* 处理skip
+* times
+* concurrency
 
 
-## requirements
-jinja2
-requests
 
+TestCase类负责
+* 变量解析替换,
+* merge config
+* merge variables
+* setup/teardown执行
+* check/extra执行
+
+
+
+Request具体步骤负责
+* 根据config设置session默认值
+* 注册session变量
+* 组装url
+* 设置默认method
+
+
+字段支持 字符串 简写 和 字典格式
+
+## Todo
+* 尝试使用模板组装形式
+* config中setup teardown variables不支持$变量

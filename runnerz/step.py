@@ -3,9 +3,6 @@ import random
 from runnerz.keywords import *
 from runnerz.base import Base
 from runnerz.utils import get_section, is_step, get_function
-from runnerz.thread import MyThread
-# from runnerz.plugins.http import Http
-from runnerz.function import request
 
 
 class StepGroup(Base):  # steps
@@ -29,7 +26,6 @@ class Step(Base):
         super().__init__(data, context)
 
     def run(self):
-        print()
         action = get_function(self.data, self.context)
         if action and callable(action):
             return action(self.data, self.context)
@@ -37,9 +33,10 @@ class Step(Base):
 
 if __name__ == '__main__':
     import yaml
-    with open('/Users/apple/Documents/Projects/Self/PyPi/runnerz/data.yml', encoding='utf-8') as f:
+    with open('/Users/apple/Documents/Projects/Self/PyPi/data/data.yml', encoding='utf-8') as f:
         data = yaml.safe_load(f)
     context = {}
+    from runnerz.function import request
     context['functions'] = {'request': request}
     g = StepGroup(data, context)
     # print(g.name)

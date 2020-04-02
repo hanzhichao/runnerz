@@ -1,0 +1,83 @@
+{
+  "name": "测试套件1",
+  "description": "",
+  "config": {
+    "base_url": "https://httpbin.org",
+    "request": {
+      "headers": {
+        "x-test": "abc123"
+      },
+      "timeout": 30
+    },
+    "variables": {
+      "a": "12"
+    }
+  },
+  "testcases": [
+    {
+      "name": "测试用例1",
+      "description": "",
+      "tags": [
+        "smoke"
+      ],
+      "config": {
+        "base_url": "https://httpbin.org",
+        "request": {
+          "headers": {
+            "x-test1": "abc123"
+          },
+          "timeout": 30
+        },
+        "variables": {
+          "a": "12"
+        }
+      },
+      "steps": [
+        {
+          "name": "步骤1",
+          "skip": false,
+          "request": {
+            "method": "get",
+            "url": "/get",
+            "params": {
+              "a": 1,
+              "b": 2
+            }
+          }
+        },
+        {
+          "name": "步骤1",
+          "skip": false,
+          "request": {
+            "method": "get",
+            "url": "/get",
+            "params": {
+              "a": 1,
+              "b": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "测试用例1",
+      "description": "",
+      "tags": [
+        "smoke"
+      ],
+      "config": {
+        "base_url": "https://httpbin.org",
+        "request": {
+          "headers": {
+            "x-test2": "abc123"
+          },
+          "timeout": 30
+        },
+        "variables": {
+          "a": "12"
+        }
+      },
+      "steps": []
+    }
+  ]
+}

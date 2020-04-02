@@ -1,8 +1,19 @@
+import os
+import sys
 import yaml
 from string import Template
 import operator
+import importlib
+
+from logz import log
 
 from runnerz.keywords import ACTION, SUB_STEPS, FUNCTIONS, VAIABLES
+
+BASEDIR = os.path.dirname(os.path.dirname(__file__))
+
+FIXTURES_FILE = 'fixtures'
+
+
 
 def get_section(data, keywords):
     if not isinstance(keywords, (str, list)):
@@ -18,7 +29,7 @@ def get_section(data, keywords):
 
 
 def is_step(data):
-    return False if get_section(data, SUB_STEPS) else True
+    return True if get_section(data, SUB_STEPS) is None else False
 
 
 def get_function(data, context=None):
@@ -63,6 +74,36 @@ def do_check(data, context):
             for key, value in line.items():
                 if hasattr(operator, key):
                     func = getattr(operator, key)
-                    value = [variables.get(item) or item for item in value]
+                    for index, item in enumerate(value):
+                        if isinstance(item, str):
+                            value[index] = variables.get(item) or item
                     result = func(*value)
         print("处理断言:", line, "结果:", "PASS" if result else "FAIL")
+
+
+def merge_update(dict1, dict2):
+    """融合子属性中的字典和列表类型"""
+    for item, value in dict2.items():
+        if item in dict1:
+            if isinstance(value, dict) and isinstance(dict1[item], dict):
+                merge_update(dict1[item], dict2[item])
+                continue
+            if isinstance(item, list) and isinstance(dict1[item], list):
+                dict1[item].extend(dict2[item])
+                continue
+        dict1[item] = dict2[item]
+
+
+def get_model_functions(model):
+    functions = {attr: func for attr, func in model.__dict__.items()
+                 if not attr.startswith('__')}
+    return functions
+
+
+def get_fixtures():
+    try:
+        fixtures = importlib.import_module(FIXTURES_FILE)
+    except Exception as ex:
+        log.exception(ex)
+        return {}
+    return get_model_functions(fixtures)

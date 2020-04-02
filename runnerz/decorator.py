@@ -15,7 +15,7 @@ def step(func):
 
     @wraps(func)
     def wapper(data, context):  # todo
-        data = parse(data, context)
+        # data = parse(data, context)
         name = data.get(NAME)
         extract = data.get(EXTRACT)
         check = data.get(CHECK)
