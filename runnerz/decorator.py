@@ -21,7 +21,7 @@ def step(func):
         check = data.get(CHECK)
 
         if name:
-            print('执行步骤')
+            log.info('执行步骤', name)
 
         status = 'pass'
         try:

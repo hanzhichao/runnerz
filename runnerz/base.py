@@ -39,7 +39,6 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         self.data = parse(data, self.context)  # 2. 数据解析
         self.setup_hooks = self.data.get(SETUP_HOOKS) or self.config.get(SETUP_HOOKS)
         self.teardown_hooks = self.data.get(TEARDOWN_HOOKS) or self.config.get(TEARDOWN_HOOKS)
-        print(self.setup_hooks, self.teardown_hooks)
         self.pre_steps = []
         self.post_steps = []
         self.handle_fixtures(self.setup_hooks, self.pre_steps)
@@ -73,7 +72,6 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         self.merge_variables()
 
     def handle_fixtures(self, data, steps):
-        log.debug('处理步骤:', data, steps)
         fixtures = self.context.get(FIXTURES, {})
         if data:
             if not isinstance(data, list):
