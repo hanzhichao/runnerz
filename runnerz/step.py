@@ -11,13 +11,13 @@ class StepGroup(Base):  # steps
         self.run_mode = data.get(RUN_MODE)
         self.sub_steps = get_section(data, SUB_STEPS)
 
-    def run(self):
+    def run(self, data, context):
         self.result = []
         for step in self.sub_steps:
             if is_step(step):
-                self.result.append(Step(step, self.context).run())
+                self.result.append(Step(step, context)())
             else:
-                self.result.extend(StepGroup(step, self.context).run())
+                self.result.extend(StepGroup(step, self.context)())
         return self.result
 
 
@@ -25,7 +25,7 @@ class Step(Base):
     def __init__(self, data, context=None):
         super().__init__(data, context)
 
-    def run(self):
+    def run(self, data, context):
         action = get_function(self.data, self.context)
         if action and callable(action):
             return action(self.data, self.context)

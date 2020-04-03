@@ -4,10 +4,10 @@ simple runner like httprunner
 
 ## 特性
 - [x] HTTP默认配置
-- [ ] 用户自定义变量
-- [ ] 环境变量
+- [x] 用户自定义变量
+- [x] 环境变量
 - [ ] .env支持
-- [ ] 并发及多轮
+- [x] 并发及多轮
 - [ ] 重跑
 - [ ] 步骤组并行运行
 - [x] setup_hook/teardown_hook

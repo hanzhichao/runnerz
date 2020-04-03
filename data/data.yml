@@ -27,12 +27,12 @@ stages:
     steps:
       - name: 步骤1
         action: request
-        skip: True
-        times: 3
+#        skip: True
+#        times: 3
         request:
           url: /get
           method: get
-          params: {a: $a, username: $username, password: $password}
+          params: {a: $a, username: $username, password: $password, user: $SMTP_USER}
         check:
           - response.status_code == 200
           - eq: [status_code, 200]
@@ -40,8 +40,8 @@ stages:
           url: response_json['url']
       - name: 步骤2
         action: request
-        concurrency: 2
-        times: 4
+#        concurrency: 2
+#        times: 4
         request:
           url: https://httpbin.org/post
           method: post

@@ -41,7 +41,6 @@ def request(data, context):
         # 设置默认请求想
         set_default_request(config, session)
 
-
     # 设置默认方法
     set_default_method(req)
 

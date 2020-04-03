@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from collections import ChainMap
 
 from logz import log, logit
-log.level = 'info'
+# log.level = 'info'
 
 from runnerz.keywords import *
 from runnerz.utils import merge_update, parse, get_fixtures, do_check, do_extract
@@ -51,7 +51,6 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         self.handle_fixtures(self.setup_hooks, self.pre_steps)  # 4. 将setup/teardown添加到pre/post_steps
         self.handle_fixtures(self.teardown_hooks, self.post_steps)
 
-
     def merge_config(self):
         """融合各个步骤/步骤组中的配置"""
         if self.config:
@@ -81,10 +80,10 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
 
     def handle_extract_check(self):
         if self.extract:
-            self.post_steps.append(dict(target=do_check, args=self.extract))
+            self.post_steps.append(dict(target=do_extract, args=(self.extract, self.context)))  #
 
         if self.check:
-            self.post_steps.append(dict(target=do_check, args=self.check))
+            self.post_steps.append(dict(target=do_check, args=(self.extract, self.context)))
 
     def handle_fixtures(self, data, steps):
         fixtures = self.context.get(FIXTURES, {})
@@ -99,8 +98,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
                     raise TypeError(f'步骤: {step}只支持字典格式')
                 for key, value in step.items():
                     function = fixtures.get(key)
-                    steps.append(dict(target=function, args=value))
-
+                    steps.append(dict(target=function, args=(value,)))
 
     def do_pre_steps(self):
         log.debug(f'执行前置步骤: {self.pre_steps}')
@@ -110,8 +108,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         for step in self.pre_steps:
             function = step.get('target')
             args = step.get('args')
-            results.append(function(args))
-
+            results.append(function(*args))
 
     def do_post_steps(self):
         log.debug(f'执行后置步骤: {self.post_steps}')
@@ -121,7 +118,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         for step in self.post_steps:
             function = step.get('target')
             args = step.get('args')
-            results.append(function(args))
+            results.append(function(*args))
 
     def parallel_run(self):
         times = self.times // self.concurrency
@@ -138,7 +135,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         results = []
         for i in range(self.times):
             log.info('执行步骤:', self.name, f'第{i+1}轮' if self.times > 1 else '')
-            result = self.run()
+            result = self.run(self.data, self.context)
             results.append(result)
             self.context['result'] = self.result
         return results
@@ -156,7 +153,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
             log.info('跳过步骤:', self.name, f'原因: skip={self.skip}')
         return skip
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self):
         if self.should_skip():
             return
         run_function = self.parallel_run if self.concurrency else self.sequence_run
@@ -175,6 +172,6 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         return self.result
 
     @abstractmethod
-    def run(self):
+    def run(self, data, context):
         pass
 

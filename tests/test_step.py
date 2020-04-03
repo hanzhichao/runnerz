@@ -16,7 +16,7 @@ def test_step_group_with_data():
     context = {}
     context['functions'] = {'request': request}
     g = StepGroup(data, context)
-    g.run()
+    g()
 
 
 def test_step_group_with_testsuite():
@@ -25,7 +25,7 @@ def test_step_group_with_testsuite():
     context = {}
     context['functions'] = {'request': request}
     g = StepGroup(data, context)
-    g.run()
+    g()
 
 
 def test_step_with_fixtues():
