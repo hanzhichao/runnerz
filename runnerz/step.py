@@ -5,7 +5,7 @@ from runnerz.base import Base
 from runnerz.utils import get_section, is_step, get_function
 
 
-class StepGroup(Base):  # steps
+class StepGroup(Base):  # testcase   steps
     def __init__(self, data, context=None):
         super().__init__(data, context)
         self.run_mode = data.get(RUN_MODE)

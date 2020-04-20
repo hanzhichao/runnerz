@@ -1,4 +1,5 @@
 import os
+import unittest
 from abc import ABCMeta, abstractmethod
 from collections import ChainMap
 
@@ -8,6 +9,7 @@ from logz import log, logit
 from runnerz.keywords import *
 from runnerz.utils import merge_update, parse, get_fixtures, do_check, do_extract
 from runnerz.thread import MyThread
+from runnerz.function import request
 
 
 DEFAULT_VARIABLES = ChainMap({}, os.environ)
@@ -101,6 +103,8 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
                     steps.append(dict(target=function, args=(value,)))
 
     def do_pre_steps(self):
+        if not self.pre_steps:
+            return
         log.debug(f'执行前置步骤: {self.pre_steps}')
         if not self.pre_steps:
             return []
@@ -111,6 +115,8 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
             results.append(function(*args))
 
     def do_post_steps(self):
+        if not self.post_steps:
+            return
         log.debug(f'执行后置步骤: {self.post_steps}')
         if not self.post_steps:
             return []
@@ -120,6 +126,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
             args = step.get('args')
             results.append(function(*args))
 
+    # step group
     def parallel_run(self):
         times = self.times // self.concurrency
         results = []
@@ -140,6 +147,16 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
             self.context['result'] = self.result
         return results
 
+    def to_unittest(self):
+        class TestTemplate(unittest.TestCase):
+            f"""{self.name}"""
+
+        context = {}
+        context['functions'] = {'request': request}
+        for index, step in enumerate(self.sub_steps):
+            case = lambda self: Base(step, context)()
+            setattr(TestTemplate, f'test_method_{index + 1}', case)
+
     def should_skip(self):
         skip = self.skip
         if isinstance(skip, str):
@@ -158,9 +175,9 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
             return
         run_function = self.parallel_run if self.concurrency else self.sequence_run
         try:
-            pre_results = self.do_pre_steps()
+            self.pre_result = self.do_pre_steps()
             self.result = run_function()
-            post_results = self.do_post_steps()
+            self.post_result = self.do_post_steps()
         except AssertionError as ex:
             log.exception(ex)
             self.status = 'FAIL'

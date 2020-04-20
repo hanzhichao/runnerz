@@ -20,6 +20,7 @@ def pack_url(config, request):
     if not url.startswith('http'):
         request['url'] = '/'.join((baseurl.rstrip('/'), url.lstrip('/')))
 
+
 def set_default_request(config, session):
     request = config.get(REQUEST)
     if request:

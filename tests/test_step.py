@@ -35,3 +35,11 @@ def test_step_with_fixtues():
     context['functions'] = {'request': request}
     g = StepGroup(data, context)
     g()
+
+def test_with_data():
+    data_file = os.path.join(DATADIR, 'data2.yaml')
+    data = file.load(data_file)
+    context = {}
+    context['functions'] = {'request': request}
+    g = StepGroup(data, context)
+    g()
