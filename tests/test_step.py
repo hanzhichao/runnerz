@@ -36,6 +36,7 @@ def test_step_with_fixtues():
     g = StepGroup(data, context)
     g()
 
+
 def test_with_data():
     data_file = os.path.join(DATADIR, 'data2.yaml')
     data = file.load(data_file)

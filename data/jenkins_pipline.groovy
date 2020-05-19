@@ -80,7 +80,7 @@ pipeline {
     }
     paramenters {   // 接受用户指定的参数
         choice(name:'PerformMavenRelease',choices:'False\nTrue',description:'desc')
-        password(name:'CredsToUse',description:'Apassword to build with',defaultValue:'')
+        password(name:'CredsToUse',description:'Apassword to build_suite with',defaultValue:'')
 
     }
     environment {

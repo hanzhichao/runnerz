@@ -4,7 +4,7 @@ from logz import log
 
 from runnerz.keywords import NAME, CHECK, EXTRACT, CONTEXT, DATA
 from runnerz.utils import do_check, do_extract, parse
-from runnerz.step import Step
+# from runnerz.step import Step
 
 functions = {}
 

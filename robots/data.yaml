@@ -1,0 +1,67 @@
+Settings:
+  Documention: 测试套件
+  Library:
+    - Selenium2Library
+    - requestLibrary
+  Resouce:
+    - abc.txt
+  ForceTags: [abc]
+  DefaultTags: [p2]
+  TestTimeout: 60
+
+Variables:
+  a: 3
+  b: 5
+  params:
+    a: 100
+    b: 200
+
+Keywords:
+  open:
+    Arguments: [a,b]
+    Skip: True
+    Steps:
+      - log $a
+      - log $b
+    Return: $b
+
+
+TestCases:
+  - 测试用例1:
+      Documentation: 测试用例1描述
+      Tags: p3,
+      Skip: True
+      Timeout: 30
+      Steps:
+        - log hello,$a
+        - open $a $b
+  - 测试用例2:
+      Documention: 测试用例2描述
+#      Skip: True
+      Tags: p3
+      Timeout: 30
+      Variables:
+        params:
+          a: 123
+          b: 234
+      Steps:
+#        - log hello,$b
+        - res=get https://httpbin.org/get params=$params
+        - log $res.json
+        - get https://httpbin.org/get params=$params | url=extract $result.json.url # todo 多值提取
+        - log $url
+#        - get https://httpbin.org/get params=$params | url=$result.json.url
+#        - log $url
+#        - target: get
+#          args:
+#            - https://httpbin.org/get
+#            - params:
+#                a: abc
+#                b: 123
+#          extract:
+#            url: $result.json.url
+#          validate:
+#            - eq: [$result.status_code, 200]
+
+
+

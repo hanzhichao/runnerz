@@ -1,5 +1,8 @@
-option: {}
-enviroment: {}
+option:
+    timeout: 1 HOURS
+
+enviroment: {}  # 设置环境变量
+
 agent: any
 parameters:
     mark:
@@ -23,3 +26,7 @@ stages:
 post: 
     always:
         - sh 'always do ...'
+    failure:
+        - mail:
+              to: team@example.com,
+              subject: The Pipeline failed :(
