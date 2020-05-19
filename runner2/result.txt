@@ -1,3 +1,0 @@
-Ran 5 tests in 1.951s
-
-FAILED (errors=4, skipped=1)

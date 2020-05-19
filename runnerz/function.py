@@ -2,7 +2,7 @@ import requests
 from logz import log, logit
 
 from runnerz.keywords import NAME, CHECK, EXTRACT, VAIABLES, CONFIG, REQUEST_SESSION, REQUEST
-# from runnerz.decorator import step
+from runnerz.decorator import step
 
 
 def set_default_method(request):

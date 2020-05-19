@@ -40,7 +40,7 @@ def get_function(data, context=None):
     if action:
         return functions.get(action)
 
-    for action in functions.keys():
+    for action in functions.keys() - {'name', 'key', 'skip', 'extract', 'validate'}:
         function = functions.get(action)
         if function is not None:
             return function

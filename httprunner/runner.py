@@ -301,18 +301,6 @@ class RunnerResult(unittest.TestResult):
             unexpectedSuccesses=len(self.unexpectedSuccesses)
         )
 
-    # @property
-    # def platform(self):
-    #     return dict(httprunner_version='1.5.6', python_version=platform.python_version(), platform=platform.platform())
-
-    # @property
-    # def output(self):
-    #     return []
-    #
-    # @property
-    # def records(self):
-    #     return []
-
     @property
     def summary(self):
         return dict(name=self.name, base_url=self.base_url, success=self.success,

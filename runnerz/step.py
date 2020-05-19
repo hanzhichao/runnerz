@@ -4,7 +4,6 @@ from runnerz.keywords import *
 from runnerz.base import Base
 from runnerz.utils import get_section, is_step, get_function
 
-
 class StepGroup(Base):  # testcase   steps
     def __init__(self, data, context=None):
         super().__init__(data, context)
@@ -33,7 +32,7 @@ class Step(Base):
 
 if __name__ == '__main__':
     import yaml
-    with open('/Users/apple/Documents/Projects/Self/PyPi/data/data.yml', encoding='utf-8') as f:
+    with open('/Users/apple/Documents/Projects/Self/PyPi/runnerz/data/data.yml', encoding='utf-8') as f:
         data = yaml.safe_load(f)
     context = {}
     from runnerz.function import request
@@ -48,4 +47,4 @@ if __name__ == '__main__':
     #
     # print(functions)
     # print(g.context)
-    g.run()
+    g.run(data, context)
