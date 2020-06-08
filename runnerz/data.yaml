@@ -1,0 +1,40 @@
+name: 测试套件名称
+config:
+  request:
+    base_url: https://httpbin.org
+    headers:
+      token: abc123
+  variables:
+    a: 100
+    b: 200
+    c: ${add($a, $b)}
+
+tests:
+  - name: 接口测试用例
+    steps:
+      - name: 步骤1-GET请求
+        setup_hooks:
+          - ${setup('hello')}
+        teardown_hooks:
+          - ${teardown('world')}
+        request:
+          url: /get
+          method: GET
+        extract:
+          - u: content.url
+        validate:
+          - eq: [status_code, 200]
+          - comparator: eq
+            check: content.url2
+            expect: https://httpbin.org/get
+
+      - name: 步骤2-POST请求
+        skip: True
+        request:
+          url: /post
+          method: POST
+          data:
+            a: $a
+            b: 2
+            c: $c
+      - log: hello, $a

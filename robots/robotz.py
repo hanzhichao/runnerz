@@ -8,20 +8,13 @@ import requests
 
 from logz import log, logit
 from filez import file
-
+from robots.utils import split_and_strip, parse_dollar, get_comparator
 print = log.info
 
 
 
-
-
-
-
-
-
-@logit()
-def extract(result, expr):
-    return get_field(dict(result=result), expr)
+def extract(expr):
+    return expr
 
 
 functions = dict(
@@ -29,9 +22,6 @@ functions = dict(
     get=requests.get,
     extract=extract
 )
-
-
-
 
 
 def parse_args(context: dict, *args):
@@ -42,21 +32,13 @@ def parse_kwargs(context: dict, **kwargs):
     return {parse_dollar(context, key): parse_dollar(context, value) for key, value in kwargs.items()}
 
 
-def get_comparator(text):
-    for comparator in ['==', 'is not', 'is', 'not in', 'in', 'not', '>', '<', '>=', '<=']:
-        if comparator in text:
-            return comparator
-
-
 def do_filter2(result, text):
     comparator = get_comparator(text)
     if comparator:
         text = split_and_strip(text, comparator)
 
     context = dict(result=result)
-    log.debug('do_filter', result, text)
     value = parse_dollar(context, text)
-    log.debug('pared text', text)
     # filter_result = eval(str(text), {}, context)
     # if is_expr(text):
     #     assert eval(text, {}, dict(result=result))
@@ -65,42 +47,32 @@ def do_filter2(result, text):
 
 
 def do_function(context, expr):
-    log.debug('do function', expr)
     if isinstance(expr, str):
         func_name, *args = expr.split()
-        print('args', args)
         key = None
         if '=' in func_name:
             key, func_name = split_and_strip(func_name, '=')
-
         kwargs = {item.split('=', 1)[0]: item.split('=', 1)[1] for item in args if '=' in item}
         args = [item for item in args if '=' not in item]
         args = parse_args(context, *args)
         kwargs = parse_kwargs(context, **kwargs)
         func = functions.get(func_name)
+        print('func', func)
         if func:
-            log.debug('do func', func.__name__, args, kwargs)
             result = func(*args, **kwargs)
-            context['result'] = context['$'] = result
-
             if key:
                 context[key] = result
-                log.warning(context)
             return result
 
 
 def do_filter(context, expr):
-    print('do filter', expr)
     # context = dict(result=result)
-    print(context, expr)
     result = do_function(context, expr)
     # do_step(context)
-    print('do filter result', result, context)
     return result
 
 
 def do_step(context, expr: (str, dict)):
-    log.debug('do step', expr)
     filters = None
     # if isinstance(expr, dict):
     #     key, expr = tuple(expr.items())[0]  # fixme
@@ -108,17 +80,78 @@ def do_step(context, expr: (str, dict)):
     if '|' in expr:
         expr, *filters = split_and_strip(expr, '|')
 
-        print('expr', expr, 'filters', filters)
-
     result = do_function(context, expr)
+    context['result'] = result
     if filters:
         for expr in filters:
-            do_filter(context, expr)
+            log.debug('do filter', expr)
+            result = do_filter(context, expr)
 
 
+def build_keyword(name: str, attrs: dict) -> dict:
+    doc = attrs.get('Documention')
+    arg_names = attrs.get('Arguments', [])
+    steps = attrs.get('Steps', [])
+    func_return = attrs.get('Return')
+    # context = locals()
+
+    def func(*args):
+        kwargs = dict(zip(arg_names, args))
+        locals().update(kwargs)
+        for step in steps:
+            do_step(locals(), step)
+        return locals().get('func_return')
+
+    func.__name__ = name
+    func.__doc__ = doc
+    return {name: func}
 
 
+def handle_keywords(keywords: dict) -> None:
+    global functions  # fixme
+    [functions.update(build_keyword(name, attrs)) for name, attrs in keywords.items()]
 
+
+def build_case(index:int, test: dict) -> types.FunctionType:
+    name, attrs = tuple(test.items())[0]
+    def test_method(self):
+        if attrs.get('Skip'):
+            raise unittest.SkipTest('Skip=True跳过用例')
+        if attrs.get('Variables'):
+            self.context.update(attrs.get('Variables'))
+        steps = attrs.get('Steps')
+        for step in steps:
+            do_step(self.context, step)
+
+    test_method.__name__ = f'test_{index+1}'
+    test_method.__doc__ = attrs.get('Documentation')
+    test_method.name = name
+    test_method.tags = attrs.get('Tags')
+    test_method.timeout = attrs.get('Timeout')
+    return test_method
+
+
+def build(data: dict):
+    context = variables = data.get('Variables')
+
+    class TestRobot(unittest.TestCase):
+        @classmethod
+        def setUpClass(cls) -> None:
+            cls.context = context
+
+    keywords = data.get('Keywords')
+    handle_keywords(keywords)
+
+    tests = data.get('TestCases')
+    [setattr(TestRobot, f'test_{index+1}', build_case(index, test)) for index, test in enumerate(tests)]
+
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestRobot)
+    return suite
+
+
+def run(suite):
+    runner = unittest.TextTestRunner(verbosity=2)
+    runner.run(suite)
 
 
 # def test_is_expr():
