@@ -1,0 +1,37 @@
+name: 测试套件
+config:
+  request:
+    timeout: 30
+    headers:
+      x-test: abc123
+  variables:
+    client_id: kPoFYw85FXsnojsy5bB9hu6x
+    client_secret: &client_secret l7SuGBkDQHkjiTPU3m6NaNddD6SCvDMC
+
+tests:
+  - name: 测试用例1
+    steps:
+      - name: 步骤1-获取百度token接口 # 接口名称
+        request:  # 请求报文
+          url: https://aip.baidubce.com/oauth/2.0/token
+          params:
+            grant_type: client_credentials
+            client_id: $client_id
+            client_secret: *client_secret  # 使用锚点
+        extract:  # 提取变量, 字典格式
+          token:  response.json()['access_token']  # RESPONSE系统变量，代表响应对象
+        verify:
+          - status_code == 200
+      - name: 步骤2-百度ORC接口  # 第二个接口
+        request:
+          url: https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=${token}  # 使用变量
+          data:  # 请求体（表单格式）
+            url: https://upload-images.jianshu.io/upload_images/7575721-40c847532432e852.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240
+        verify:  # 断言, 列表格式
+          - response.json()['words_result_num'] == 6
+      - name: 步骤3-跳过
+        skip: True
+      - name: 步骤4-重复执行
+        times: 3
+        request:
+          url: https://httpbin.org/get
