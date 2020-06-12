@@ -1,357 +1,338 @@
-import os
-from string import Template
-from collections import ChainMap
-import threading
-# from concurrent.futures import ThreadPoolExecutor
-import random
 import re
 import json
-import operator
-
-import yaml
 import requests
-from jsonpath import jsonpath
-from lxml import etree
-from lxml.etree import HTMLParser
-from jsonschema import validate
+from string import Template
+from functools import reduce
+from operator import eq, gt, lt, ge, le
+import unittest
+import ddt
+import importlib
+import types
+from datetime import datetime
+import time
+import platform
 
-from logz import log
+from logz import log  # 需要 pip install logz
+from filez import file # 需要 pip install filez
 
-log.format = '%(asctime)s %(threadName)s %(levelname)s %(message)s'
 print = log.info
 
-BASEDIR = os.path.dirname(os.path.dirname(__file__))
-SCHEMA_FILE = os.path.join(BASEDIR, 'schema.json')
 
-# 步骤定义
-CONFIG = 'config'  # 配置关键字  settings
-STAGES = 'stages'
-STEPS = 'steps'  # 步骤关键字  steps/teststeps/testcases
+COMPARE_FUNCS = dict(
+    eq=eq, gt=gt, lt=lt, ge=ge, le=le,
+    len_eq=lambda x, y: len(x) == len(y),
+    str_eq=lambda x, y: str(x) == str(y),
+    type_match=lambda x, y: isinstance(x, y),
+    regex_match=lambda x, y: re.match(y, x)
+)
 
-NAME = 'name'  # 名称
-VAIABLES = 'variables'  # 用户自定义变量关键字
-RUN_TYPE = 'run_type'  # stage中steps运行方式
-BASEURL = 'baseurl'
-REQUEST = 'request'  # 请求配置,请求数据关键字
-CHECK = 'check'  # 验证关键字  check/validate/assert
-EXTRACT = 'extract'   # 提取关键字 output/register
-SKIP = 'skip'  # 跳过步骤关键字
-TIMES = 'times'  # 循环步骤关键字  circle
-ACTION = 'action'  # 步骤类型 operation/keywords/function/target
-
-CONCURRENCY = 'concurrency'
-
-# 上下文变量
-POLL = '_poll'  # 线程池  废弃
-SESSION = '_session'  # 请求会话
-CONFIG = '_config'  # 配置
+FUNCTION_REGEX = re.compile(r'\${(?P<func>.*?)}')
+CSV_REGEXT = re.compile(r'\${P\((?P<csv>.*?)\)}')
 
 
-class MyThread(threading.Thread):
-    def __init__(self, func, *args, **kwargs):  # 改变线程的使用方式，可以直接传递函数方法和函数参数
-        super(MyThread, self).__init__()
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
-        self.result = None
-
-    def run(self):
-        self.result = self.func(*self.args, **self.kwargs)  # 为线程添加属性result存储运行结果
-
-
-def find_by_jsonpath(text, expr):
+def do_dot(item, key: str):
+    """单个content.url取值"""
+    if hasattr(item, key):
+        return getattr(item, key)
+    if key.isdigit():
+        key = int(key)
     try:
-        res_dict = json.loads(text)
+        return item[key]
     except Exception as ex:
         log.exception(ex)
-        return
-    result = jsonpath(res_dict, expr)
-    if result and len(result) == 1:
-        return result[0]
-    return result
+        return None
 
 
-def find_by_re(text, expr):
-    result = re.findall(expr, text)
-    if result and len(result) == 1:
-        return result[0]
-    return result
+def get_field(context: dict, expr: str):
+    """解析形如content.result.0.id的取值"""
+    if '.' in expr:
+        value = expr.split('.')
+        field = context.get(value[0])
+        return reduce(lambda x, y: do_dot(x, y), value[1:], field)
+    else:
+        return context.get(expr)
 
 
-def find_by_xpath(text, expr):
+def parse_request(base_url: str, request: dict) -> dict:
+    """补充完整request"""
+    if base_url and not request['url'].startswith('http'):
+        request['url'] = base_url + request['url']
+    return request
+
+
+def send_request(context, session, request):
+    """发送请求"""
+    response = session.request(**request)
+    print('请求数据', request)
+    print('响应数据', response.text)
     try:
-        html = etree.HTML(text, etree.HTMLParser())
-        result = html.xpath('expr')
-    except Exception:
-        result = False
-    if result and len(result) == 1:
-        return result[0]
-    return result
+        content = response.json()
+    except json.decoder.JSONDecodeError:
+        content = {}
+
+    # 注册上下文变量
+    context.update(
+        response=response,
+        request=response.request,
+        content=content,
+        status_code=response.status_code,
+        headers=response.headers,
+        ok=response.ok,
+        reason=response.reason,
+        response_time=response.elapsed.seconds
+    )
 
 
-class Base(object):  # 节点通用
-    def __init__(self, data, context={}):
-        self.data = data
-        self.context = context
-        self.name = data.get(NAME)
-        self.skip = data.get(SKIP)
-        self.config = context.get(CONFIG)
-        self.result = None
-        self.status = None
+def do_extract(context: dict, extract: list):
+    """处理提取变量"""
+    for line in extract:
+        key, value = tuple(line.items())[0]
+        context[key] = get_field(context, value)
 
-    def _run(self):
-        pass
 
-    def _post(self):
-        pass
-
-    def process(self):
-        pass
-
-    def run(self):
-        try:
-            self.result = self._run()
-        except AssertionError as ex:
-            # log.exception(ex)
-            self.status = 'FAIL'
-            raise ex
-        except Exception as ex:
-            # log.exception(ex)
-            self.status = 'ERROR'
-            raise ex
+def do_validate(context, validate):
+    """处理断言"""
+    for line in validate:
+        if 'comparator' in line:
+            comparator = line.get('comparator')
+            check = line.get('check')
+            expect = line.get('expect')
         else:
-            self.status = 'PASS'
-        return self.result
+            comparator, value = tuple(line.items())[0]
+            check, expect = value
+        compare_func = COMPARE_FUNCS.get(comparator)
+        field = get_field(context, check)
+        assert compare_func(field, expect), f'表达式: {check} 实际结果: {field} not {comparator} 期望结果: {expect}'
 
 
-class Step(Base):
-    def __init__(self, step, context):
-        super().__init__(step, context)
-        self.step = self.data
+def get_functions() -> dict:
+    """从debugtalk模块中获取功能函数"""
+    try:
+        module = importlib.import_module('debugtalk')
+    except ModuleNotFoundError:
+        log.debug('no debugtalk.py')
+        return {}
+    else:
+        functions = {key: value for key, value in module.__dict__.items()
+                    if not key.startswith('__') and callable(value)}
+        return functions
 
-        self.times = step.get(TIMES, 1)
-        self.run_type = step.get(RUN_TYPE)
-        self.check = step.get(CHECK)
-        self.extract = step.get(EXTRACT)
-        self.concurrency = step.get(CONCURRENCY, 1)
 
-    def parse(self, data):
-        data_str = yaml.dump(data, default_flow_style=False)  # 先转为字符串
-        if '$' in data_str:
-            data_str = Template(data_str).safe_substitute(self.context)  # 替换${变量}为varables中的同名变量
-            data = yaml.safe_load(data_str)  # 重新转为字典
+def parse_dollar(context: dict, data: (list,dict)) -> (list, dict):
+    """解析$变量"""
+    data_str = json.dumps(data)
+    if '$' in data_str:
+        data_str = Template(data_str).safe_substitute(context)
+        return json.loads(data_str)
+    else:
         return data
 
-    def post_check(self):
-        # 处理断言
-        results = []
-        for line in self.check:
-            if isinstance(line, str):
-                result = eval(line, {}, self.context)  # 计算断言表达式，True代表成功，False代表失败
-            elif isinstance(line, dict):
-                for key, value in line.items():
-                    if hasattr(operator, key):
-                        func = getattr(operator, key)
-                        items = []
-                        for item in value:
-                            if isinstance(item, str):
-                                item = self.context.get(item, item)
-                            items.append(item)
 
-                        result = func(*items)
-            print("   处理断言:", line, "结果:", "PASS" if result else "FAIL")
-            results.append(result)
-        if not all(results):
-            raise AssertionError('断言失败')
+def do_test(self, test: dict) -> None:
+    """测试用例运行方法"""
+    if test.get('skip'):
+        raise unittest.SkipTest
+    setup_hooks = test.get('setup_hooks')
+    teardown_hooks = test.get('teardown_hooks')
+    parsed_test = parse_dollar(self.context, test)
+    request = parse_request(self.base_url, parsed_test.get('request'))
+    self.context['request'] = request  # 注册上下文以方便setup_hooks中的方法可以使用
 
-    def post_extract(self):
-        for key, value in self.extract.items():
-            # 计算value表达式，可使用的全局变量为空，可使用的局部变量为RESPONSE(响应对象)
-            result = eval(value, {}, self.context)  # 保存变量结果到上下文中
-            print("   提取变量:", key, value, "结果:", result)
-            self.context[key] = result
+    if setup_hooks:
+        parse_function(self.context, self.functions, setup_hooks)
+    if teardown_hooks:
+        self.addCleanup(parse_function, self.context, self.functions, teardown_hooks)
 
-    def parallel_run(self):
-        times = self.times // self.concurrency
-        results = []
-        for i in range(times):
-            print('  执行步骤:', self.name, f'第{i+1}轮 并发量: {self.concurrency}' if self.times > 1 else '')
+    send_request(self.context, self.session, request)
+    do_extract(self.context, parsed_test.get('extract', []))
+    do_validate(self.context, parsed_test.get('validate', []))
 
-            threads = [MyThread(self.process) for i in range(self.concurrency)]
-            [t.start() for t in threads]
-            [t.join() for t in threads]
-            results.extend([t.result for t in threads])
 
-    def sequence_run(self):
-        results = []
-        for i in range(self.times):
-            print('  执行步骤:', self.name, f'第{i+1}轮' if self.times > 1 else '')
-            result = self.process()
-            results.append(result)
-            self.context['result'] = self.result
-        return results
+def parse_function(context: dict, functions: dict, data: (list, dict)) -> (list,dict):
+    data_str = json.dumps(data)
+    if '$' in data_str:
+        data_str = Template(data_str).safe_substitute(context)
 
-    def _run(self):
-        if self.skip:
-            print('  跳过步骤:', self.name)
+    def repr_func(matched):
+        """自定义re.sub替换方法"""
+        if not matched:
             return
-        if self.concurrency > 1:
-            result = self.parallel_run()
-        else:
-            result = self.sequence_run()
+        return str(eval(matched.group(1), {}, functions))
+
+    data_str = re.sub(FUNCTION_REGEX, repr_func, data_str)
+    return json.loads(data_str)
 
 
-        if self.check:
-            self.post_check()
+def parse_parameters(parameters: list) -> tuple:
+    """解析parameters中的变量和数据"""
+    line = parameters[0]
+    keys, data = tuple(line.items())[0]
+    if isinstance(data, str):
+        matched = re.match(CSV_REGEXT, data)
+        if not matched:
+            raise ValueError(f'参数化不支持: {data} 形式')
+        csv_file = matched.group('csv')
+        data = file.load(csv_file)
+        data = data[1:]  # 舍弃标题行
+        print('数据', data)
+    keys = keys.split('-')
+    return keys, data
 
-        if self.extract:
-            self.post_extract()
-        return result
 
-    def process(self):
-        pass
+def build_case(index: int, test: dict) -> types.FunctionType:
+    """生成用例方法"""
+    parameters = test.get('parameters')
+    if parameters:
+        keys, data = parse_parameters(parameters)
+
+        def test_api_ddt(self, values):
+            key_values = dict(zip(keys, values))
+            print('测试数据', key_values)
+            self.context.update(key_values)
+            do_test(self, test)
+
+        test_method = ddt.data(*data)(test_api_ddt)
+    else:
+        def test_api(self):
+            do_test(self, test)
+
+        test_method = test_api
+
+    test_method.__name__ = f'test_api_{index+1}'
+    test_method.__doc__ = test.get("name")
+    return test_method
 
 
-class Http(Step):
-    def __init__(self, step, context):
-        super().__init__(step, context)
-        self.baseurl = self.config.get(BASEURL)
-        context.setdefault(SESSION, requests.session())
-        self.session = context.get(SESSION)
+def format_data(data: list)-> dict:
+    """将[config, test, test]格式改为{name, config, testcases格式}"""
+    config = data[0].get('config')
+    name = config.pop('name')
+    testcases = [test.get('test') for test in data[1:]]
+    return dict(name=name, config=config, testcases=testcases)
 
-        request = self.config.get(REQUEST)
-        if request:
-            for key, value in request.items():
-                self.session.__setattr__(key, value)
 
-    def set_default_method(self, request):
-        if request.get('data') or request.get('json') or request.get('files'):
-            request.setdefault('method', 'post')
-        else:
-            request.setdefault('method', 'get')
+def build(data: (list, dict), functions=None)-> unittest.TestSuite:
+    if isinstance(data, list):
+        data = format_data(data)
+    name = data.get('name', '')
+    config = data.get('config', {})
+    testcases = data.get('testcases', [])
 
-    def pack_url(self, request):
-        if not self.baseurl:
-            return
-        url = request.get('url')
-        if not url.startswith('http'):
-            request['url'] = '/'.join((self.baseurl.rstrip('/'), url.lstrip('/')))
+    """组装suite"""
+    class TestApi(unittest.TestCase):
+        @classmethod
+        def setUpClass(cls):
+            nonlocal config
+            cls.functions = functions or {}
+            cls.session = requests.session()
 
-    def send_request(self, request):
-        # 发送请求
-        print('   请求url:', request.get('url'))  # print(' 发送请求:', request)
-        response = self.session.request(**request)  # 字典解包，发送接口
-        print('   状态码:', response.status_code)  # print(' 响应数据:', response.text)
+            context = config.get('variables')
+            config = parse_function(context, cls.functions, config)
+            config_request = config.get('request')
+            cls.base_url = config_request.pop('base_url') if 'base_url' in config_request else None
+            cls.context = config.get('variables', {})
+            for key, value in config_request.items():
+                setattr(cls.session, key, value)
 
-        try:
-            res_dict = response.json()
-        except Exception:
-            res_dict = {}
+    for index, test in enumerate(testcases):
+        # test = test.get('test')
+        test_method = build_case(index, test)
+        setattr(TestApi, f'test_api_{index+1}', test_method)
 
-        # 注册上下文变量
-        step_result = dict(
-            request=request,
-            response=response,
-            response_json=res_dict,
-            status_code=response.status_code,
-            response_text=response.text,
-            response_headers=response.headers,
-            response_time=response.elapsed.seconds,
-            xpath=lambda expr: find_by_xpath(response.text, expr),
-            jsonpath=lambda expr: find_by_jsonpath(response.text, expr),
-            re=lambda expr: find_by_re(response.text, expr)
+    TestApi = ddt.ddt(TestApi)
+    TestApi.__doc__ = name
+
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestApi)
+    return suite
+
+
+class RunnerResult(unittest.TestResult):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        self.name = None
+        self.base_url = None
+        self.start_at = None
+        self.end_at = None
+        self.successes = []
+        self.output = []
+        self.records = []
+
+    def startTest(self, test):
+        if self.start_at is None:
+            self.start_at = time.time()
+            self.name = test.__doc__
+            self.base_url = getattr(test, 'base_url')
+        else:  # 保存上一次的结果
+            context = getattr(test, 'context', {})
+            request = context.get('request')
+            response = dict(status_code=context.get('status_code'),
+                            content=context.get('content'),
+                            text=context.get('text'),
+                            headers=context.get('headers'),
+                            response_time=context.get('response_time'))
+            meta_data = dict(name=None, status=None, request=request, response=response, validators=[])
+            self.records.append(dict(attachment='', meta_data=meta_data))
+
+
+        super().startTest(test)
+
+    def stopTest(self, test):
+        self.end_at = time.time()
+        super().stopTest(test)
+
+    def addSuccess(self, test):
+        self.successes.append(test)
+
+    @property
+    def time(self):
+        return dict(start_at=self.start_at, duration=self.end_at-self.start_at)
+
+    @property
+    def success(self):
+        return len(self.failures) == 0 and len(self.errors) == 0 and len(self.unexpectedSuccesses) == 0
+
+    @property
+    def stat(self):
+        return dict(
+            testsRun=self.testsRun,
+            successes=len(self.successes),
+            skipped=len(self.skipped),
+            failures=len(self.failures),
+            errors=len(self.errors),
+            expectedFailures=len(self.expectedFailures),
+            unexpectedSuccesses=len(self.unexpectedSuccesses)
         )
-        self.context['steps'].append(step_result)  # 保存步骤结果
-        self.context.update(step_result)  # 将最近的响应结果更新到上下文变量中
-        return response
 
-    def process(self):
-        request = self.step.get(REQUEST)
-        request = self.parse(request)
-        self.set_default_method(request)
-        self.pack_url(request)
-        return self.send_request(request)
+    @property
+    def platform(self):
+        return dict(httprunner_version='1.5.6', python_version=platform.python_version(), platform=platform.platform())
 
+    # @property
+    # def output(self):
+    #     return []
+    #
+    # @property
+    # def records(self):
+    #     return []
 
-class Stage(Base):  # steps
-    def __init__(self, stage, context):
-        super().__init__(data, context)
-        self.stage = stage
-        self.run_type = stage.get(RUN_TYPE)
-        self.steps = stage.get(STEPS)
-        self.context['steps'] = []
-
-    def parallel_run(self):
-        threads = []
-        results = []
-        for step in self.steps:
-            action = Http(step, self.context)
-            threads.append(MyThread(action.run))
-        [t.start() for t in threads]
-        [t.join() for t in threads]
-        results.extend([t.result for t in threads])
-        return results
-
-    def sequence_run(self):
-        results = []
-        for step in self.steps:
-            result = Http(step, self.context).run()
-            results.append(result)
-        return results
-
-    def _run(self):
-        print(' 执行stage:', self.name, '运行方式:', self.run_type)
-        if self.run_type == 'parallel':
-            return self.parallel_run()
-        elif self.run_type == 'random':
-            random.shuffle(self.steps)
-        return self.sequence_run()
+    @property
+    def summary(self):
+        return dict(name=self.name, base_url=self.base_url, success=self.success,
+                    time=self.time, stat=self.stat, output=self.output, records=self.records,
+                    platform=self.platform)
 
 
-class Flow(Base):
-    def __init__(self, data, context={}):
-        super().__init__(data, context)
-        self.config = data.get(CONFIG, {})
-
-        self.variables = self.config.get(VAIABLES, {})
-        self.context = ChainMap(self.variables, os.environ)
-        self.context[CONFIG] = self.config
-        self._validate()
-
-    def _validate(self):
-        with open(SCHEMA_FILE) as f:
-            schema = json.load(f)
-
-        validate(instance=self.data, schema=schema)
-
-    def _run(self):
-        print('执行流程:', self.name)
-        stages = data.get(STAGES)
-        results = []
-        for stage in stages:
-            result = Stage(stage, self.context).run()
-            results.append(result)
-        return results
-
-    def run(self):
-        try:
-            self.result = self._run()
-        except AssertionError as ex:
-            log.exception(ex)
-            self.status = 'FAIL'
-        except Exception as ex:
-            log.exception(ex)
-            self.status = 'ERROR'
-        else:
-            self.status = 'PASS'
-        return self.result
+def run(data: (dict, list)) -> unittest.TestResult:
+    """运行suite"""
+    functions = get_functions()
+    suite = build(data, functions)
+    runner = unittest.TextTestRunner(verbosity=2, resultclass=RunnerResult)
+    result = runner.run(suite)
+    return result
 
 
-if __name__ == "__main__":
-    with open('/Users/apple/Documents/Projects/Self/PyPi/runnerz/data.yml', encoding='utf-8') as f:
-        data = yaml.safe_load(f)
-
-    f = Flow(data)
-    print(f.run())
-    print(f.status)
-    print(f.result)
+if __name__ == '__main__':
+    data = file.load('/Users/superhin/项目/runnerz/data.yml')
+    result = run(data)
+    from pprint import pprint
+    pprint(result.summary)
