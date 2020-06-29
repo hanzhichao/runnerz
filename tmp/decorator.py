@@ -2,8 +2,9 @@ from functools import wraps
 
 from logz import log
 
-from runnerz.keywords import NAME, CHECK, EXTRACT, CONTEXT, DATA
-from runnerz.utils.utils import do_check, do_extract, parse
+from tmp.keywords import NAME, CHECK, EXTRACT
+from tmp.utils import do_check, do_extract
+
 # from runnerz.step import Step
 
 functions = {}

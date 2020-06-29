@@ -1,4 +1,4 @@
-from runnerz.utils import merge_update
+from tmp.utils import merge_update
 
 
 def test_merge_update():

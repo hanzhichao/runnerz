@@ -2,6 +2,21 @@
 
 simple runner like httprunner
 
+
+## 目标
+- 支持多步骤
+- 支持dubbo
+- 兼容httprunner
+
+
+
+
+
+
+
+
+
+
 ## 特性
 - [x] HTTP默认配置
 - [x] 用户自定义变量

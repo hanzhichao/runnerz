@@ -1,8 +1,8 @@
 import requests
-from logz import log, logit
+from logz import log
 
-from runnerz.keywords import NAME, CHECK, EXTRACT, VAIABLES, CONFIG, REQUEST_SESSION, REQUEST
-from runnerz.decorator import step
+from tmp.keywords import NAME, VAIABLES, CONFIG, REQUEST_SESSION, REQUEST
+from tmp.decorator import step
 
 
 def set_default_method(request):

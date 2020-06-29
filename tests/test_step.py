@@ -1,9 +1,9 @@
 import os
 
 from filez import file
-from runnerz.base import StepGroup
+from tmp.base import StepGroup
 
-from runnerz.function import request
+from tmp.function import request
 
 BASEDIR = os.path.dirname(os.path.dirname(__file__))
 DATADIR = os.path.join(BASEDIR, 'tests', 'data')

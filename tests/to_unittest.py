@@ -3,8 +3,8 @@ import unittest
 
 from filez import file
 
-from runnerz.base import StepGroup, Step
-from runnerz.function import request
+from tmp.base import StepGroup
+from tmp.function import request
 
 BASEDIR = os.path.dirname(os.path.dirname(__file__))
 DATADIR = os.path.join(BASEDIR, 'tests')

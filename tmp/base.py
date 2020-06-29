@@ -6,10 +6,10 @@ from collections import ChainMap
 from logz import log
 # log.level = 'info'
 
-from runnerz.keywords import *
-from runnerz.utils.utils import merge_update, parse, get_fixtures, do_check, do_extract, get_section, is_step, get_function
-from runnerz.utils.thread import MyThread
-from runnerz.function import request
+from tmp.keywords import *
+from tmp.utils import merge_update, parse, get_fixtures, do_check, do_extract, get_section, is_step, get_function
+from tmp.utils.thread import MyThread
+from tmp.function import request
 
 
 DEFAULT_VARIABLES = ChainMap({}, os.environ)

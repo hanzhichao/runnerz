@@ -1,6 +1,6 @@
 
-from runnerz.base import Step
-from robots.utils import parse_dollar
+from tmp.base import Step
+from tmp.robots.utils import parse_dollar
 
 def test_format_data():
     s = Step('b=log hello,$a')

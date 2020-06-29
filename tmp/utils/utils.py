@@ -1,5 +1,4 @@
 import os
-import sys
 import yaml
 from string import Template
 import operator
@@ -7,7 +6,7 @@ import importlib
 
 from logz import log
 
-from runnerz.keywords import ACTION, SUB_STEPS, FUNCTIONS, VAIABLES
+from tmp.keywords import ACTION, SUB_STEPS, FUNCTIONS, VAIABLES
 
 BASEDIR = os.path.dirname(os.path.dirname(__file__))
 

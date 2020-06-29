@@ -1,14 +1,11 @@
 import unittest
 import types
-import re
-from functools import reduce
-from string import Template
 
 import requests
 
-from logz import log, logit
+from logz import log
 from filez import file
-from robots.utils import split_and_strip, parse_dollar, get_comparator
+from tmp.robots.utils import split_and_strip, parse_dollar, get_comparator
 print = log.info
 
 

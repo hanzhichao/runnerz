@@ -2,10 +2,6 @@ import unittest
 import types
 
 
-from logz import logit
-from robots.utils import parse_dollar, split_and_strip
-
-
 # class Step(object):
 #     def __init__(self):
 #         pass
