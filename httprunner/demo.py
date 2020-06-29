@@ -33,11 +33,11 @@
 # # 1. 实现步骤解析
 # import unittest
 #
-# data = [1,2,3,4,5]
+# tests = [1,2,3,4,5]
 #
 # class TestsDemo(unittest.TestCase):
 #     def test_a(self):
-#         for item in data:
+#         for item in tests:
 #             with self.subTest(item=item):
 #                 self.assertGreater(item, 2)
 #
@@ -72,7 +72,7 @@
 # r=jinja2.Template(text).render(dict(a=3))
 # print(r)
 import re
-text = '${P(data.csv)}'
+text = '${P(tests.csv)}'
 CSV_REGEXT = re.compile('\${P\((?P<csv>.*?)\)}')
 r = re.match(CSV_REGEXT, text)
 print(r.group(1))

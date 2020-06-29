@@ -1,18 +1,16 @@
 import os
 
-import yaml
 from filez import file
-from runnerz.step import StepGroup
+from runnerz.base import StepGroup
 
 from runnerz.function import request
 
 BASEDIR = os.path.dirname(os.path.dirname(__file__))
-DATADIR = os.path.join(BASEDIR, 'data')
+DATADIR = os.path.join(BASEDIR, 'tests', 'data')
 
 
 def test_step_group_with_data():
-    data_file = os.path.join(DATADIR, 'data.yml')
-    data = file.load(data_file)
+    data = file.load(os.path.join(DATADIR, 'runnerz_01.yaml'))
     context = {}
     context['functions'] = {'request': request}
     g = StepGroup(data, context)
@@ -29,7 +27,7 @@ def test_step_group_with_testsuite():
 
 
 def test_step_with_fixtues():
-    data_file = os.path.join(DATADIR, 'data.yml')
+    data_file = os.path.join(DATADIR, 'tests.yml')
     data = file.load(data_file)
     context = {}
     context['functions'] = {'request': request}
@@ -38,7 +36,7 @@ def test_step_with_fixtues():
 
 
 def test_with_data():
-    data_file = os.path.join(DATADIR, 'data2.yaml')
+    data_file = os.path.join(DATADIR, 'httprunner_01.yaml')
     data = file.load(data_file)
     context = {}
     context['functions'] = {'request': request}

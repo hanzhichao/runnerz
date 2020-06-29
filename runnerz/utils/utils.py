@@ -58,11 +58,16 @@ def parse(data, context):
     return data
 
 
-def do_extract(data, context):
+def do_extract(data: (dict, list), context):
+    if isinstance(data, dict):   # dict -> list
+        data = [data]
     variables = context.get(VAIABLES)
-    for key, value in data.items():
-        print("提取变量:", key, value)
-        variables[key] = eval(value, {}, variables)  # 保存变量结果到局部变量中
+    for line in data:
+        if not isinstance(line, dict):
+            raise TypeError(f'line: {line} 必须为字典格式')
+        for key, value in line.items():
+            print("提取变量:", key, value)
+            variables[key] = eval(value, {}, variables)  # 保存变量结果到局部变量中
 
 
 def do_check(data, context):

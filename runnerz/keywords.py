@@ -1,4 +1,3 @@
-
 # 通用 -------------------------------
 NAME = 'name'  # 名称
 DESCRIPTION = 'description'
@@ -27,7 +26,7 @@ CHECK = 'check'  # 验证关键字  check/validate/assert
 EXTRACT = 'extract'   # 提取关键字 output/register
 ACTION = 'action'  # 步骤类型 operation/keywords/function/target
 
-DATA = 'data'
+DATA = 'tests'
 CONTEXT = 'context'
 
 # 上下文变量

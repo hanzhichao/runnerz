@@ -1,5 +1,5 @@
 
-from runnerz2.step import Step
+from runnerz.base import Step
 from robots.utils import parse_dollar
 
 def test_format_data():
@@ -27,7 +27,7 @@ def test_parse():
     }
     print(s.data)
     s.parse(context)
-    print('s.data', s.data)
+    print('s.tests', s.data)
     assert s.target == 'log'
     assert s.key == 'b'
     assert 'hello,100' in s.args

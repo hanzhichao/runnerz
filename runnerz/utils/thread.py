@@ -1,7 +1,6 @@
 import threading
 
 
-
 class MyThread(threading.Thread):
     def __init__(self, func, *args, **kwargs):  # 改变线程的使用方式，可以直接传递函数方法和函数参数
         super(MyThread, self).__init__()

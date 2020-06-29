@@ -6,14 +6,18 @@ from runnerz.decorator import step
 
 
 def set_default_method(request):
-    if request.get('data') or request.get('json') or request.get('files'):
+    if request.get('tests') or request.get('json') or request.get('files'):
         request.setdefault('method', 'post')
     else:
         request.setdefault('method', 'get')
 
 
-def pack_url(config, request):
-    baseurl = config.get('baseurl') or config.get('base_url')
+def pack_url(config, request: dict):
+    if not isinstance(request, dict):
+        raise TypeError(f'request: {request} 必须为字典格式')
+    log.warning('pack url', request, 'config', config)
+    request_config = config.get('request', {})  # todo keywords
+    baseurl = request_config.get('base_url') or request_config.get('baseurl') or config.get('base_url') or config.get('baseurl') # todo
     if not baseurl:
         return
     url = request.get('url')
@@ -50,6 +54,7 @@ def request(data, context):
         # 注册变量
         variables['response'] = res
         variables['response_json'] = res.json()  # todo
+        variables['content'] = res.json()  # todo
         variables['status_code'] = res.status_code
 
         log.debug('请求数据:', req, '响应数据:', res.text)

@@ -1,8 +1,8 @@
 settings:
   documentation: 测试套件描述
   library: selenium2library
-  variables: data/variables.py
-  resource: data/keywords.txt
+  variables: tests/variables.py
+  resource: tests/keywords.txt
 
   suite_setup:
     - log  suite setup

@@ -19,7 +19,7 @@ variables:
   b: 2
 
 #varables:
-#  - data/data.yaml # 支持from file
+#  - tests/tests.yaml # 支持from file
 
 test_测试用例1:
   desc: 用例1描述

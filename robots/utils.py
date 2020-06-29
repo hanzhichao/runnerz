@@ -63,12 +63,12 @@ def get_comparator(text):
             return comparator
 
 
-# def parse_list(context: dict, data: list) -> list:
-#     return [parse_dollar(context, arg) for arg in data]
+# def parse_list(context: dict, tests: list) -> list:
+#     return [parse_dollar(context, arg) for arg in tests]
 #
 #
-# def parse_dict(context: dict, data: dict) -> dict:
-#     return {parse_dollar(context, key): parse_dollar(context, value) for key, value in data.items()}
+# def parse_dict(context: dict, tests: dict) -> dict:
+#     return {parse_dollar(context, key): parse_dollar(context, value) for key, value in tests.items()}
 
 
 # import re

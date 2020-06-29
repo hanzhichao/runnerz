@@ -3,7 +3,7 @@ from functools import wraps
 from logz import log
 
 from runnerz.keywords import NAME, CHECK, EXTRACT, CONTEXT, DATA
-from runnerz.utils import do_check, do_extract, parse
+from runnerz.utils.utils import do_check, do_extract, parse
 # from runnerz.step import Step
 
 functions = {}
@@ -16,7 +16,7 @@ def step(func):
 
     @wraps(func)
     def wapper(data, context):  # todo
-        # data = parse(data, context)
+        # tests = parse(tests, context)
         name = data.get(NAME)
         extract = data.get(EXTRACT)
         check = data.get(CHECK)
@@ -47,13 +47,13 @@ def step(func):
 #     #     functions[func_name] = step(func)
 #
 #     @wraps(func)
-#     def wapper(data, context):  # todo
-#         # data = parse(data, context)
-#         name = data.get(NAME)
-#         extract = data.get(EXTRACT)
-#         check = data.get(CHECK)
+#     def wapper(tests, context):  # todo
+#         # tests = parse(tests, context)
+#         name = tests.get(NAME)
+#         extract = tests.get(EXTRACT)
+#         check = tests.get(CHECK)
 #
-#         step = Step(data, context)
+#         step = Step(tests, context)
 #         step.run = func
 #         return step()
 #

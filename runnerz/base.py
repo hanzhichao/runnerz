@@ -3,12 +3,12 @@ import unittest
 from abc import ABCMeta, abstractmethod
 from collections import ChainMap
 
-from logz import log, logit
+from logz import log
 # log.level = 'info'
 
 from runnerz.keywords import *
-from runnerz.utils import merge_update, parse, get_fixtures, do_check, do_extract
-from runnerz.thread import MyThread
+from runnerz.utils.utils import merge_update, parse, get_fixtures, do_check, do_extract, get_section, is_step, get_function
+from runnerz.utils.thread import MyThread
 from runnerz.function import request
 
 
@@ -25,6 +25,8 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         self.description = data.get(DESCRIPTION)
         self.tags = data.get(TAGS)
         self.level = data.get(LEVEL)
+        self.check = self.raw.get(CHECK)
+        self.extract = self.raw.get(EXTRACT)
 
         self.config = data.get(CONFIG, {})
         self.variables = data.get(VAIABLES, {})  # 在项目中还是config中?
@@ -41,13 +43,14 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
         self.status = None
 
         self.context = context
-        self.config_context(context)  # 1. 初始化上下文
 
-        self.data = parse(data, self.context)  # 2. 数据解析
+        self.init()
+
+    def init(self):
+        self.config_context(self.context)  # 1. 初始化上下文
+        self.data = parse(self.raw, self.context)  # 2. 数据解析
         self.setup_hooks = self.data.get(SETUP_HOOKS) or self.config.get(SETUP_HOOKS)
         self.teardown_hooks = self.data.get(TEARDOWN_HOOKS) or self.config.get(TEARDOWN_HOOKS)
-        self.check = data.get(CHECK)
-        self.extract = data.get(EXTRACT)
 
         self.handle_extract_check()  # 3. 将check/extra添加到post_steps
         self.handle_fixtures(self.setup_hooks, self.pre_steps)  # 4. 将setup/teardown添加到pre/post_steps
@@ -152,7 +155,7 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
             f"""{self.name}"""
 
         context = {}
-        context['functions'] = {'request': request}
+        context['functions'] = {'request': request}   # todo
         for index, step in enumerate(self.sub_steps):
             case = lambda self: Base(step, context)()
             setattr(TestTemplate, f'test_method_{index + 1}', case)
@@ -192,3 +195,28 @@ class Base(object, metaclass=ABCMeta):  # 节点通用
     def run(self, data, context):
         pass
 
+
+class StepGroup(Base):  # testcase   steps
+    def __init__(self, data, context=None):
+        super().__init__(data, context)
+        self.run_mode = data.get(RUN_MODE)
+        self.sub_steps = get_section(data, SUB_STEPS)
+
+    def run(self, data, context):
+        self.result = []
+        for step in self.sub_steps:
+            if is_step(step):
+                self.result.append(Step(step, context)())
+            else:
+                self.result.extend(StepGroup(step, self.context)())
+        return self.result
+
+
+class Step(Base):
+    def __init__(self, data, context=None):
+        super().__init__(data, context)
+
+    def run(self, data, context):
+        action = get_function(self.data, self.context)
+        if action and callable(action):
+            return action(self.data, self.context)

@@ -1,6 +1,6 @@
 import re
 import json
-import requests
+import requestz as requests
 from string import Template
 from functools import reduce
 from operator import eq, gt, lt, ge, le
@@ -63,7 +63,7 @@ def send_request(context, session, request):
     """发送请求"""
     response = session.request(**request)
     print('请求数据', request)
-    print('响应数据', response.text)
+    print('响应数据', response.text[:100])
     try:
         content = response.json()
     except json.decoder.JSONDecodeError:
@@ -76,9 +76,13 @@ def send_request(context, session, request):
         content=content,
         status_code=response.status_code,
         headers=response.headers,
+        text=response.text,
         ok=response.ok,
-        reason=response.reason,
-        response_time=response.elapsed.mileseconds
+        reason=response.reason if hasattr(response, 'reason') else None,
+        client_ip=response.client_ip,
+        stats=response.stats,
+        cookies=response.cookies,
+        response_time=response.elapsed.microseconds / 1000  # 毫秒
     )
 
 
@@ -100,16 +104,19 @@ def do_validate(context, validate):
             comparator, value = tuple(line.items())[0]
             check, expect = value
         compare_func = COMPARE_FUNCS.get(comparator)
-        field = get_field(context, check)
+        field = get_field(context, check.strip('.'))
         assert compare_func(field, expect), f'表达式: {check} 实际结果: {field} not {comparator} 期望结果: {expect}'
 
 
 def get_functions() -> dict:
     """从debugtalk模块中获取功能函数"""
-    module = importlib.import_module('debugtalk')
-    functions = {key: value for key, value in module.__dict__.items()
+    try:
+        module = importlib.import_module('debugtalk')
+        functions = {key: value for key, value in module.__dict__.items()
                  if not key.startswith('__') and callable(value)}
-    return functions
+        return functions
+    except ModuleNotFoundError:
+        return {}
 
 
 def parse_dollar(context: dict, data: (list,dict)) -> (list, dict):
@@ -155,7 +162,7 @@ def parse_function(context: dict, functions: dict, data: (list, dict)) -> (list,
         """自定义re.sub替换方法"""
         if not matched:
             return
-        return str(eval(matched.group(1), {}, functions))
+        return str(eval(matched.group(1), {}, functions))  # bug: NameError: name 'add' is not defined
 
     data_str = re.sub(FUNCTION_REGEX, repr_func, data_str)
     return json.loads(data_str)
@@ -197,14 +204,15 @@ def build_case(index: int, test: dict) -> types.FunctionType:
         test_method = test_api
 
     test_method.__name__ = f'test_api_{index+1}'
-    test_method.__doc__ = test.get("name")
+    test_method.__doc__ = test_method.name = test.get("name")
+    print('test_method_name', test.get("name"))
     return test_method
 
 
 def format_data(data: list)-> dict:
     """将[config, test, test]格式改为{name, config, testcases格式}"""
-    config = data[0].get('config')
-    name = config.pop('name')
+    config = data[0].get('config', {})
+    name = config.pop('name') if 'name' in config else None
     testcases = [test.get('test') for test in data[1:]]
     return dict(name=name, config=config, testcases=testcases)
 
@@ -238,7 +246,7 @@ def build_suite(data: (list, dict), functions=None)-> unittest.TestSuite:
         setattr(TestApi, f'test_api_{index+1}', test_method)
 
     TestApi = ddt.ddt(TestApi)
-    TestApi.__doc__ = name
+    TestApi.__doc__ = name    # suite名
 
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestApi)
     return suite
@@ -260,29 +268,53 @@ class RunnerResult(unittest.TestResult):
             self.start_at = time.time()
             self.name = test.__doc__
             self.base_url = getattr(test, 'base_url')
-        else:  # 保存上一次的结果
-            context = getattr(test, 'context', {})
-            request = context.get('request')
-            response = dict(status_code=context.get('status_code'),
-                            content=context.get('content'),
-                            text=context.get('text'),
-                            headers=context.get('headers'),
-                            response_time=context.get('response_time'))
-            meta_data = dict(name=None, status=None, request=request, response=response, validators=[])
-            self.records.append(dict(attachment='', meta_data=meta_data))
-
-
         super().startTest(test)
+
+    def registerResult(self, test, err=None, status='success'):
+        context = getattr(test, 'context', {})
+        request = context.get('request')  # bug: AttributeError: 'NoneType' object has no attribute 'headers'
+        # request_headers = [(item.split(':')[0].strip(), item.split(':')[1].strip()) for item in (request.headers or [])]
+        request = dict(
+            method=request.method,
+            url=request.url,
+            headers=request.headers,
+            body=request.body
+            )
+        # name = test.name   # bug 应为用例名称
+        name = test._testMethodDoc
+        attachment = '' if err is None else self._exc_info_to_string(err, test)
+        response = dict(status_code=context.get('status_code'),
+                        content=context.get('content'),
+                        text=context.get('text'),
+                        client_ip=context.get('client_ip'),
+                        stats=context.get('stats'),
+                        headers=dict(context.get('headers') or {}),
+                        cookies=dict(context.get('cookies') or {}),
+                        response_time=context.get('response_time'))
+        meta_data = dict(request=request, response=response, validators=[])
+        self.records.append(dict(name=name, status=status, attachment=attachment, meta_data=meta_data))
 
     def stopTest(self, test):
         self.end_at = time.time()
+
         super().stopTest(test)
 
     def addSuccess(self, test):
         self.successes.append(test)
+        self.registerResult(test)
+
+    def addError(self, test, err):
+        super().addError(test, err)
+        self.registerResult(test, err, status='error')
+
+    def addFailure(self, test, err):
+        super().addFailure(test, err)
+        self.registerResult(test, err, status='fail')
 
     @property
     def time(self):
+        if not self.start_at or self.end_at:
+            return {}
         return dict(start_at=self.start_at, duration=self.end_at-self.start_at)
 
     @property
@@ -303,14 +335,22 @@ class RunnerResult(unittest.TestResult):
 
     @property
     def summary(self):
-        return dict(name=self.name, base_url=self.base_url, success=self.success,
-                    time=self.time, stat=self.stat, output=self.output, records=self.records)
+        return dict(
+            name=self.name,
+            base_url=self.base_url,
+            success=self.success,
+            time=self.time,
+            stat=self.stat,
+            output=self.output,
+            records=self.records
+            )
 
 
 def run_suite(suite: unittest.TestSuite) -> unittest.TestResult:
     """运行suite"""
     with open('result.txt', 'w', encoding='utf-8') as f:
         runner = unittest.TextTestRunner(stream=f, verbosity=2, resultclass=RunnerResult)
+        # runner = unittest.TextTestRunner(stream=f, verbosity=2)
         return runner.run(suite)
 
 
@@ -326,6 +366,8 @@ def sum_stat(results, field):
 
 def run_multi(datas: list):
     functions = get_functions()
+
+    print('tests-----', datas)
     suites = [build_suite(data, functions) for data in datas]
     # suite = unittest.TestSuite(suites)
     # print(suite)
@@ -350,8 +392,10 @@ def run_multi(datas: list):
     summary['details'] = [result.summary for result in results]
     return summary
 
+
 if __name__ == '__main__':
-    data = file.load('/Users/apple/Documents/Projects/Self/PyPi/runnerz/httprunner/data.yaml')
+    data = file.load('/Users/superhin/项目/runnerz/httprunner/tests.yaml')
+    # result = run_suite(tests)
     result = run_multi([data, data])
     from pprint import pprint
     pprint(result)

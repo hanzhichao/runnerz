@@ -162,6 +162,6 @@ def run(suite):
 if __name__ == '__main__':
     text = 'log hello,world'
     # do_step(text)
-    data = file.load('/Users/apple/Documents/Projects/Self/PyPi/runnerz/robots/data.yaml')
+    data = file.load('/Users/apple/Documents/Projects/Self/PyPi/runnerz/robots/tests.yaml')
     suite = build(data)
     run(suite)

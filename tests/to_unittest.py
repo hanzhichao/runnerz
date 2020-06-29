@@ -3,13 +3,13 @@ import unittest
 
 from filez import file
 
-from runnerz.step import StepGroup, Step
+from runnerz.base import StepGroup, Step
 from runnerz.function import request
 
 BASEDIR = os.path.dirname(os.path.dirname(__file__))
-DATADIR = os.path.join(BASEDIR, 'data')
+DATADIR = os.path.join(BASEDIR, 'tests')
 
-data_file = os.path.join(DATADIR, 'data.yml')
+data_file = os.path.join(DATADIR, 'tests.yml')
 data = file.load(data_file)
 
 TestTemplete = type('TestTemplate',

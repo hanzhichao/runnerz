@@ -1,4 +1,4 @@
-name: 测试套件名称
+name: 基本三层模式
 config:
   request:
     base_url: https://httpbin.org
@@ -13,10 +13,6 @@ tests:
   - name: 接口测试用例
     steps:
       - name: 步骤1-GET请求
-        setup_hooks:
-          - ${setup('hello')}
-        teardown_hooks:
-          - ${teardown('world')}
         request:
           url: /get
           method: GET
@@ -25,7 +21,7 @@ tests:
         validate:
           - eq: [status_code, 200]
           - comparator: eq
-            check: content.url2
+            check: content.url
             expect: https://httpbin.org/get
 
       - name: 步骤2-POST请求
