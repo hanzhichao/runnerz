@@ -1,14 +1,14 @@
 from parserz import parser
 from logz import log as logging
 from runnerz.utils.ensurez import ensure_type
-from runnerz.actions import request, log
+from runnerz.actions import request, log, dubbo
 from runnerz import models
 from operator import eq, gt, lt, ge, le
 import re
 import unittest
 import ddt
 
-logging.level = 'info'
+# logging.level = 'info'
 
 
 COMPARE_FUNCS = dict(
@@ -21,7 +21,8 @@ COMPARE_FUNCS = dict(
 
 BUILD_IN_FUNCTIONS = {
     'request': request,
-    'log': log
+    'log': log,
+    'dubbo': dubbo
 }
 
 
@@ -77,6 +78,10 @@ class Runner(object):
         if suite._config:
             logging.info('注册Suite.config')
             self._context.register_config(suite._config)
+
+        if suite._variables:  # 优先级高于config.variales
+            logging.info('注册Suite.varaible')
+            self._context.register_variables(suite._variables)
 
         for case in suite._cases:
             self.run_case(case)
@@ -158,6 +163,8 @@ class UnittestRunner(Runner):
         test_method = _test_method
         test_method.__name__ = f'test_method_{index + 1}'
         test_method.__doc__ = test_method.name = case._name
+        test_method.tags = case._tags
+        test_method.level = case._level
         logging.info('test_method_name', case._name)
         return test_method
 

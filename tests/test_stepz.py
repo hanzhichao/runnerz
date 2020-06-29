@@ -8,7 +8,6 @@ from runnerz import models
 from runnerz.runner import Runner, UnittestRunner
 
 
-
 def test_models():
     suite = models.Suite(data1)
     print(suite)

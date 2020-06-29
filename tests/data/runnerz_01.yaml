@@ -9,6 +9,9 @@ config:
     b: 200
     c: ${add($a, $b)}
 
+variables:
+  d: 300
+
 tests:
   - name: 接口测试用例
     steps:
@@ -36,3 +39,18 @@ tests:
       - log: hello, $u
   - name: 测试用例2
     skip: True
+    dubbo:
+      host: 123
+      port: 456
+      service: abc
+      method: def
+      params:
+        class: abc
+        a: $a
+        b: $b
+  - name: 测试用例3
+    tags: ['smoke', 'api']
+    level: 1
+    request:
+      url: /get
+      method: GET

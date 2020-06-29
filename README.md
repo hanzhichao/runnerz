@@ -2,37 +2,40 @@
 
 simple runner like httprunner
 
+## 相比于httprunner
 
-## 目标
-- 支持多步骤
-- 支持dubbo
-- 兼容httprunner
-
-
-
-
-
-
-
-
+- 支持多种步骤,及自定义步骤
+- 支持dubbo接口
+- 用例支持多种步骤
+- 支持多种样式的报告,及自定义报告模板 reportz
+- 支持用例并发
+- 支持异步请求 aiohttp
+- 用例支持tag, level
+- 支持xpath
+- 支持trigger及设置定时任务 pytest-crontab
+- 支持更相信的请求连接信息 requestz
+- 支持json_schema断言
+- 支持直接使用python/js脚本
+- 支持参数化运行 cli / html
+- 支持自定义keywords
 
 
 ## 特性
-- [x] HTTP默认配置
-- [x] 用户自定义变量
-- [x] 环境变量
+- [ ] HTTP默认配置
+- [ ] 用户自定义变量
+- [ ] 环境变量
 - [ ] .env支持
-- [x] 并发及多轮
+- [ ] 并发及多轮
 - [ ] 重跑
 - [ ] 步骤组并行运行
-- [x] setup_hook/teardown_hook
+- [ ] setup_hook/teardown_hook
 - [x] eq断言
 - [ ] schema断言
-- [x] xpath/jsonpath/re提取
+- [ ] xpath/jsonpath/re提取
 - [ ] css selector提取
 - [ ] 根据条件跳过用例
 - [ ] 测试报告
-- [x] merge config
+- [ ] merge config
 - [x] 多级steps
 - [ ] 支持ddt
 - [ ] 支持if/else/switch/while
@@ -46,6 +49,7 @@ simple runner like httprunner
 - [ ] 运行jmeter
 - [ ] 运行robot
 - [ ] timeout限制
+- [ ] dubbo支持
 
 
 Base基类负责
@@ -83,3 +87,4 @@ Request具体步骤负责
 
 * 步骤的call 和 run 混乱
 * 步骤注册和自动发现
+
