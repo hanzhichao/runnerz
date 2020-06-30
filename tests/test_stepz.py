@@ -29,7 +29,7 @@ def test_runner():
 
 def test_unittest_runner():
     suite = models.Suite(data1)
-    case = suite._cases[0]
+    case = suite._cases[2]
     step = case._steps[0]
     runner = UnittestRunner()
     runner.run(suite)

@@ -3,7 +3,8 @@ from abc import ABCMeta, abstractmethod
 
 from runnerz.utils.ensurez import ensure_type
 
-BUILD_INS = {'name', 'extract', 'validate', 'skip', 'variables', 'config', 'tests', 'times', 'concurrency'}
+BUILD_INS = {'name', 'extract', 'validate', 'skip', 'variables', 'config', 'tests', 'times', 'concurrency', 'steps'}
+CASE_BUILD_INS = {'name', 'skip', 'variables', 'config', 'times', 'concurrency', 'steps'}
 
 
 class Keyword(object):
@@ -23,6 +24,9 @@ class Step(object):
         self._parent = parent
         self._name = data.get('name')
         self._skip = data.get('skip')
+        self._times = data.get('times')  # todo ensure_type
+        self._concurrency = data.get('concurrency')  # todo ensure_type
+
         self._target = None  # 目标函数
         self._kwargs = None # 目标函数参数
 
@@ -65,11 +69,10 @@ class Case(object):
         self.build_steps()
 
     def _guess_steps(self):
-        extra_keys = self._raw.keys() - BUILD_INS
+        extra_keys = self._raw.keys() - CASE_BUILD_INS
         if extra_keys:
-            _step_name = extra_keys.pop()
-            _step = self._raw.get(_step_name)
-            return [{_step_name: _step}]
+            steps = [{key: self._raw.get(key) for key in extra_keys}]
+            return steps
 
     def build_steps(self):
         _steps = self._raw.get('steps') or self._guess_steps()

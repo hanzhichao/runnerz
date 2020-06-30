@@ -56,7 +56,10 @@
     name: 步骤4-数据驱动
     skip: True
     parameters:
-      - a-b: ${P(tests.csv)}
+      - a-b:
+          - [1,2]
+          - [3,4]
+          - [5,6]
     request:
         url: /get
         method: GET

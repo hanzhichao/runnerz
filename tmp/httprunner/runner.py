@@ -26,7 +26,7 @@ COMPARE_FUNCS = dict(
 )
 
 FUNCTION_REGEX = re.compile(r'\${(?P<func>.*?)}')
-CSV_REGEXT = re.compile(r'\${P\((?P<csv>.*?)\)}')
+CSV_REGEX = re.compile(r'\${P\((?P<csv>.*?)\)}')
 
 
 def do_dot(item, key: str):

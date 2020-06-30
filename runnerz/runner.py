@@ -1,29 +1,34 @@
+import os
+import unittest
+import re
+from collections import ChainMap
+import threading
+
+import ddt
 from parserz import parser
 from logz import log as logging
+from htmlrunner import HTMLRunner
+
 from runnerz.utils.ensurez import ensure_type
-from runnerz.actions import request, log, dubbo
+from runnerz.actions import BUILD_IN_FUNCTIONS, COMPARE_FUNCS
 from runnerz import models
-from operator import eq, gt, lt, ge, le
-import re
-import unittest
-import ddt
+
+FUNCTION_REGEX = re.compile(r'\${(?P<func>.*?)}')
+CSV_REGEX = re.compile(r'\${P\((?P<csv>.*?)\)}')
 
 # logging.level = 'info'
 
 
-COMPARE_FUNCS = dict(
-    eq=eq, gt=gt, lt=lt, ge=ge, le=le,
-    len_eq=lambda x, y: len(x) == len(y),
-    str_eq=lambda x, y: str(x) == str(y),
-    type_match=lambda x, y: isinstance(x, y),
-    regex_match=lambda x, y: re.match(y, x)
-)
+class Thread(threading.Thread):
+    def __init__(self, func, *args, **kwargs):  # 改变线程的使用方式，可以直接传递函数方法和函数参数
+        super().__init__()
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.result = None
 
-BUILD_IN_FUNCTIONS = {
-    'request': request,
-    'log': log,
-    'dubbo': dubbo
-}
+    def run(self):
+        self.result = self.func(*self.args, **self.kwargs)  # 为线程添加属性result存储运行结果
 
 
 class Result(object):
@@ -32,11 +37,9 @@ class Result(object):
 
 class Context(object):
     def __init__(self):
-        self._variables = {}
-        self._functions = {}
+        self._variables = ChainMap({}, os.environ)
+        self._functions = BUILD_IN_FUNCTIONS
         self._config = {}
-
-        self.register_functions(BUILD_IN_FUNCTIONS)
 
     def dot_get(self, expr: str):
         """解析并获取变量值, expr: $a"""
@@ -44,7 +47,6 @@ class Context(object):
         return parser.dot_get(expr, self._variables)
 
     def parse(self, data: (str, list, dict)):
-        logging.debug('data', data)
         return parser.parse(data, self._variables)
 
     def get_function(self, target: str):
@@ -87,11 +89,11 @@ class Runner(object):
             self.run_case(case)
 
     def run_case(self, case):
-        _skip = case._skip
-        if _skip:
-            logging.info('  跳过Case', case)
+        skip, reason = self._should_skip(case)
+        if skip:
+            logging.info(f'跳过Case {case} {reason}')
             return
-        logging.info(' 运行Case', case)
+        logging.info(f'运行Case {case}')
         for step in case._steps:
             self.run_step(step)
 
@@ -121,34 +123,104 @@ class Runner(object):
             field = self._context.dot_get(check.strip('.'))
             assert compare_func(field, expect), f'表达式: {check} 实际结果: {field} not {comparator} 期望结果: {expect}'
 
-    def run_step(self, step):
-        _skip = step._skip
-        if _skip:
-            logging.info('  跳过Step', step)
-            return
+    def _should_skip(self, obj: (models.Step, models.Case)):
+        skip = obj._skip
+        if isinstance(skip, bool):
+            return skip, f'skip={skip}'
 
-        logging.info('  运行Step', step)
+        if isinstance(skip, str):
+            expr = skip
+            parsed_expr = self._context.parse(expr)
+            try:
+                skip = eval(parsed_expr, {}, {})
+            except Exception as ex:
+                logging.exception(ex)
+                reason = f'skip表达式 {skip} 出错'
+                logging.info('跳过步骤:', obj._name, reason)
+                return True
+        if skip:
+            reason = f'skip={parsed_expr}'
+            logging.info('跳过步骤:', obj._name, reason)
+            return True, reason
+        return False, 'skip=False'
+
+    def _get_step_target_function(self, step):
         _target = step._target
         ensure_type(_target, str)
         function = self._context.get_function(_target)
-        logging.debug('_target', _target, function)
-
         kwargs = self._context.parse(step._kwargs)
-        logging.warning('kwargs', kwargs)
+        return function, kwargs
+
+    def _run_step(self, step):
+        function, kwargs = self._get_step_target_function(step)
 
         result = function(kwargs, self._context)  # todo 每个函数需要两个变量
         if step._extract:
             self.do_extract(step._extract)
-
         if step._validate:
             self.do_validate(step._validate)
+
+        return result
+
+    def _run_step_in_threads(self, step, concurrency):
+        """一批多线程运行"""
+        threads = [Thread(self._run_step, step) for i in range(concurrency)]
+        [t.start() for t in threads]
+        [t.join() for t in threads]
+        return [t.result for t in threads]
+
+    def _run_step_with_times(self, step, times: int):
+        """多轮运行"""
+        ensure_type(times, int)
+        results = []
+        for i in range(times):
+            logging.info(f'运行Step {step} 第{i + 1}轮')
+            results.append(self._run_step(step))
+        return results
+
+    def _run_step_with_concurrency(self, step, times: int, concurrency: int):
+        """多轮多线程并发运行"""
+        ensure_type(times, int)
+        ensure_type(concurrency, int)
+        results = []
+        times = times // concurrency
+        for i in range(times):
+            logging.info(f'运行Step {step} 第{i + 1}轮 并发数: {concurrency}')
+            results.extend(self._run_step_in_threads(step, concurrency))
+
+        mod = times % concurrency  # 余数
+        if mod:
+            logging.info(f'运行Step {step} 第{times + 1}轮 并发数: {mod}')
+            results.extend(self._run_step_in_threads(step, mod))
+        return results
+
+    def run_step(self, step):
+        skip, reason = self._should_skip(step)
+        if skip:
+            logging.info(f'跳过Step {step} {reason}')
+            return
+
+        times = step._times
+        concurrency = step._concurrency
+
+        # 1. 无times, 只执行一次
+        if not times:
+            logging.info(f'运行Step {step}')
+            return self._run_step(step)
+
+        # 3. 有times, 无concurrency, 顺序执行多轮
+        if not concurrency:
+            return self._run_step_with_times(step, times)
+
+        # 3. 有times和concurrency
+        return self._run_step_with_concurrency(step, times, concurrency)
 
 
 class UnittestRunner(Runner):
     def run_case(self, case):  # 重新run_case
-        _skip = case._skip
-        if _skip:
-            raise unittest.SkipTest(f'跳过Case: {case}')
+        skip, reason = self._should_skip(case)
+        if skip:
+            raise unittest.SkipTest(f'跳过Case: {case} {reason}')
         logging.info(' 运行Case', case)
         for step in case._steps:
             self.run_step(step)
@@ -165,7 +237,6 @@ class UnittestRunner(Runner):
         test_method.__doc__ = test_method.name = case._name
         test_method.tags = case._tags
         test_method.level = case._level
-        logging.info('test_method_name', case._name)
         return test_method
 
     def build_suite(self, suite: models.Suite) -> unittest.TestSuite:
@@ -181,7 +252,6 @@ class UnittestRunner(Runner):
                     context.register_config(suite._config)
 
         for index, case in enumerate(suite._cases):
-            print(index, case)
             test_method = self.build_case(index, case)
             setattr(TestClass, f'test_method_{index + 1}', test_method)
 
@@ -193,6 +263,7 @@ class UnittestRunner(Runner):
 
     def run(self, suite):
         test_suite = self.build_suite(suite)
-        logging.warning(test_suite)
-        runner = unittest.TextTestRunner(verbosity=2)
+        # runner = unittest.TextTestRunner(verbosity=2)
+        runner = HTMLRunner()
         result = runner.run(test_suite)
+        return result

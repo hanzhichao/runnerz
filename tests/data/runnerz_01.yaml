@@ -14,6 +14,7 @@ variables:
 
 tests:
   - name: 接口测试用例
+    skip: True
     steps:
       - name: 步骤1-GET请求
         request:
@@ -51,6 +52,24 @@ tests:
   - name: 测试用例3
     tags: ['smoke', 'api']
     level: 1
+    skip: $a>1
+    steps:
+      - name: 步骤1
+        times: 11
+        concurrency: 2
+        request:
+          url: /get
+          method: GET
+  - name: 测试用例4
     request:
       url: /get
       method: GET
+    validate:
+      - jsonschema:
+          - content
+          - type: object
+            properties:
+              args: {type: object}
+              headers: {type: object}
+              origin: {type: string}
+              url: {type: string}

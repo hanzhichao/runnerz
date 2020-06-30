@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TEST REPORT BY HTMLRUNNER</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/css/bootstrap.min.css">
+    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class="pt-4">TEST REPORT BY HTMLRUNNER</h1>
+            
+            
+            <h6>概要: 总数: 4 执行数: 4 通过: 1 失败: 0 出错: 0 跳过: 3</h6>
+            <h6 class="pb-2">开始时间: 2020-06-30 18:04:24.526182 </h6>
+            <h6>结束时间: 2020-06-30 18:04:25.638652 </h6>
+            <h6>耗时: 0:00:01.112470s</h6>
+            <h6>平台: Darwin-19.5.0-x86_64-i386-64bit 操作系统 Darwin Python版本: 3.7.7 <a href="#env_info" data-toggle="collapse">环境变量</a></h6>
+        </div>
+        <div class="col-md-4">
+            <div id="chart" style="width: 400px;height:400px;"></div>
+            <script type="text/javascript">
+                // 基于准备好的dom，初始化echarts实例
+                var myChart = echarts.init(document.getElementById('chart'));
+                myChart.setOption({
+                    series : [
+                        {
+                            name: '执行统计',
+                            type: 'pie',    // 设置图表类型为饼图
+                            radius: '55%',  // 饼图的半径，外半径为可视区尺寸（容器高宽中较小一项）的 55% 长度。
+                            color: ['#28a745', '#dc3545', '#ffc107', '#6c757d'],
+                            data:[          // 数据数组，name 为数据项名称，value 为数据项值
+                                {value:1, name:'通过'},
+                                {value:0 , name:'失败'},
+                                {value:0 , name:'出错'},
+                                {value:3, name:'跳过'},
+                            ]
+                        }
+                    ]
+                })
+            </script>
+        </div>
+    </div>
+
+    <div id="env_info" class="collapse text-sm-left">
+        
+            PATH=/Users/superhin/项目/runnerz/venv/bin:/usr/local/Cellar/mongodb-community/4.2.7/bin:/usr/local/sbin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin}<br>
+        
+            PS1=(venv) <br>
+        
+            AUTOJUMP_SOURCED=1<br>
+        
+            VERSIONER_PYTHON_VERSION=2.7<br>
+        
+            LOGNAME=superhin<br>
+        
+            XPC_SERVICE_NAME=com.jetbrains.pycharm.9632<br>
+        
+            PWD=/Users/superhin/项目/runnerz/tests<br>
+        
+            PYCHARM_HOSTED=1<br>
+        
+            PYCHARM_DISPLAY_PORT=63342<br>
+        
+            PYTHONPATH=/Users/superhin/项目/runnerz:/Applications/PyCharm.app/Contents/plugins/python/helpers/pycharm_matplotlib_backend:/Applications/PyCharm.app/Contents/plugins/python/helpers/pycharm_display:/Applications/PyCharm.app/Contents/plugins/python/helpers/pycharm<br>
+        
+            SHELL=/bin/zsh<br>
+        
+            PYTHONIOENCODING=UTF-8<br>
+        
+            PYTEST_RUN_CONFIG=True<br>
+        
+            HOMEBREW_BOTTLE_DOMAIN=https://mirrors.ustc.edu.cn/homebrew-bottles<br>
+        
+            OLDPWD=/<br>
+        
+            PYCURL_SSL_LIBRARY=nss<br>
+        
+            USER=superhin<br>
+        
+            TMPDIR=/var/folders/jh/jblt4q5j3bq4dkjj92wrjtvh0000gp/T/<br>
+        
+            PYCHARM_HELPERS_DIR=/Applications/PyCharm.app/Contents/plugins/python/helpers/pycharm<br>
+        
+            PYTHONDONTWRITEBYTECODE=1<br>
+        
+            SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.aHAVkolgAZ/Listeners<br>
+        
+            VIRTUAL_ENV=/Users/superhin/项目/runnerz/venv<br>
+        
+            XPC_FLAGS=0x0<br>
+        
+            PYTHONUNBUFFERED=1<br>
+        
+            __CF_USER_TEXT_ENCODING=0x1F6:0x19:0x34<br>
+        
+            LC_CTYPE=zh_CN.UTF-8<br>
+        
+            AUTOJUMP_ERROR_PATH=/Users/superhin/Library/autojump/errors.log<br>
+        
+            HOME=/Users/superhin<br>
+        
+            __PYVENV_LAUNCHER__=/Users/superhin/项目/runnerz/venv/bin/python<br>
+        
+            TEAMCITY_VERSION=LOCAL<br>
+        
+            PYTEST_CURRENT_TEST=tests/test_stepz.py::test_unittest_runner (call)<br>
+        
+    </div>
+
+    <table class="table table-sm table-striped table-bordered">
+        <thead><tr><th>序号</th><th>用例</th><th>总数</th><th>通过</th><th>失败</th><th>出错</th><th>耗时</th><th>操作</th></tr></thead>
+        <tbody>
+        
+            <tr><td colspan="2">runnerz.runner.TestClass</td><td>4</td><td>1</td><td>0</td><td>0</td><td>0s</td><td>&nbsp;</td></tr>
+            
+                <tr class="ml-md-3
+                table-secondary
+                ">
+                    <td>1</td><td>test_method_1 (runnerz.runner.UnittestRunner.build_suite.<locals>.TestClass):接口测试用例</td>
+                    <td colspan="4">SKIPPED
+                    </td><td>0</td>
+                    <td><a href="#case_1" data-toggle="collapse">Detail</a></td>
+                </tr>
+                <tr id=case_1 class="collapse bg-white">
+                    <td colspan="8">
+                        <span class="badge badge-secondary">标签</span> []<br/>
+                        <span class="badge badge-secondary">等级</span> 2<br/>
+                        <span class="badge badge-secondary">开始时间</span> 2020-06-30 18:04:24.527168 <br/>
+                        <span class="badge badge-secondary">结束时间</span> 2020-06-30 18:04:24.542063<br/>
+                        <span class="badge badge-secondary">代码</span> <pre class="bg-light"><code>        def _test_method(self):
+            nonlocal case
+            run_case(case)
+</code></pre>
+                        
+                        <span class="badge badge-secondary">报错信息:</span><pre class="bg-light">跳过Case: <Case "接口测试用例"> skip=True</pre>
+                    </td>
+                </tr>
+            
+                <tr class="ml-md-3
+                table-secondary
+                ">
+                    <td>2</td><td>test_method_2 (runnerz.runner.UnittestRunner.build_suite.<locals>.TestClass):测试用例2</td>
+                    <td colspan="4">SKIPPED
+                    </td><td>0</td>
+                    <td><a href="#case_2" data-toggle="collapse">Detail</a></td>
+                </tr>
+                <tr id=case_2 class="collapse bg-white">
+                    <td colspan="8">
+                        <span class="badge badge-secondary">标签</span> []<br/>
+                        <span class="badge badge-secondary">等级</span> 2<br/>
+                        <span class="badge badge-secondary">开始时间</span> 2020-06-30 18:04:24.542433 <br/>
+                        <span class="badge badge-secondary">结束时间</span> 2020-06-30 18:04:24.542744<br/>
+                        <span class="badge badge-secondary">代码</span> <pre class="bg-light"><code>        def _test_method(self):
+            nonlocal case
+            run_case(case)
+</code></pre>
+                        
+                        <span class="badge badge-secondary">报错信息:</span><pre class="bg-light">跳过Case: <Case "测试用例2"> skip=True</pre>
+                    </td>
+                </tr>
+            
+                <tr class="ml-md-3
+                table-secondary
+                ">
+                    <td>3</td><td>test_method_3 (runnerz.runner.UnittestRunner.build_suite.<locals>.TestClass):测试用例3</td>
+                    <td colspan="4">SKIPPED
+                    </td><td>0</td>
+                    <td><a href="#case_3" data-toggle="collapse">Detail</a></td>
+                </tr>
+                <tr id=case_3 class="collapse bg-white">
+                    <td colspan="8">
+                        <span class="badge badge-secondary">标签</span> []<br/>
+                        <span class="badge badge-secondary">等级</span> 2<br/>
+                        <span class="badge badge-secondary">开始时间</span> 2020-06-30 18:04:24.543017 <br/>
+                        <span class="badge badge-secondary">结束时间</span> 2020-06-30 18:04:24.543502<br/>
+                        <span class="badge badge-secondary">代码</span> <pre class="bg-light"><code>        def _test_method(self):
+            nonlocal case
+            run_case(case)
+</code></pre>
+                        
+                        <span class="badge badge-secondary">报错信息:</span><pre class="bg-light">跳过Case: <Case "测试用例3"> skip=100>1</pre>
+                    </td>
+                </tr>
+            
+                <tr class="ml-md-3
+                table-success
+                ">
+                    <td>4</td><td>test_method_4 (runnerz.runner.UnittestRunner.build_suite.<locals>.TestClass):测试用例4</td>
+                    <td colspan="4">PASS
+                    </td><td>0</td>
+                    <td><a href="#case_4" data-toggle="collapse">Detail</a></td>
+                </tr>
+                <tr id=case_4 class="collapse bg-white">
+                    <td colspan="8">
+                        <span class="badge badge-secondary">标签</span> []<br/>
+                        <span class="badge badge-secondary">等级</span> 2<br/>
+                        <span class="badge badge-secondary">开始时间</span> 2020-06-30 18:04:24.543771 <br/>
+                        <span class="badge badge-secondary">结束时间</span> 2020-06-30 18:04:25.638443<br/>
+                        <span class="badge badge-secondary">代码</span> <pre class="bg-light"><code>        def _test_method(self):
+            nonlocal case
+            run_case(case)
+</code></pre>
+                        
+                        
+                    </td>
+                </tr>
+            
+        
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
