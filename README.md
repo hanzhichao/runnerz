@@ -1,6 +1,6 @@
 # Runnerz
 
-simple runner like httprunner
+simple runner like robot framework and httprunner
 
 ## 相比于httprunner
 
@@ -40,7 +40,7 @@ simple runner like httprunner
 - [x] 根据条件跳过用例, skip表达式
 - [ ] merge config
 - [x] 多级steps
-- [ ] 支持ddt
+- [x] 支持ddt
 - [ ] 支持if/else/switch/while
 - [ ] args
 - [ ] options
@@ -52,6 +52,7 @@ simple runner like httprunner
 - [ ] 运行jmeter
 - [ ] 运行robot
 - [x] dubbo支持
+- [ ]自定义keywords
 
 
 由reportz支持

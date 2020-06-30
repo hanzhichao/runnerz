@@ -61,6 +61,7 @@ tests:
           url: /get
           method: GET
   - name: 测试用例4
+    skip: True
     request:
       url: /get
       method: GET
@@ -73,3 +74,16 @@ tests:
               headers: {type: object}
               origin: {type: string}
               url: {type: string}
+
+  - name: 测试用例5
+#    parameters:
+#      - a-b:
+#        - [1,2]
+#        - [3,4]
+#        - [5,6]
+    request:
+      url: /get
+      method: GET
+      params:
+        a: $a
+        b: $b

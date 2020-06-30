@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from runnerz.utils.ensurez import ensure_type
 
 BUILD_INS = {'name', 'extract', 'validate', 'skip', 'variables', 'config', 'tests', 'times', 'concurrency', 'steps'}
-CASE_BUILD_INS = {'name', 'skip', 'variables', 'config', 'times', 'concurrency', 'steps'}
+CASE_BUILD_INS = {'name', 'skip', 'variables', 'config', 'times', 'concurrency', 'steps', 'parameters'}
 
 
 class Keyword(object):
@@ -64,6 +64,7 @@ class Case(object):
         self._skip = data.get('skip')
         self._tags = data.get('tags')
         self._level = data.get('level')
+        self._parameters = data.get('parameters')
         self._steps = []
 
         self.build_steps()

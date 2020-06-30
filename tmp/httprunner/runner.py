@@ -173,7 +173,7 @@ def parse_parameters(parameters: list) -> tuple:
     line = parameters[0]
     keys, data = tuple(line.items())[0]
     if isinstance(data, str):
-        matched = re.match(CSV_REGEXT, data)
+        matched = re.match(CSV_REGEX, data)
         if not matched:
             raise ValueError(f'参数化不支持: {data} 形式')
         csv_file = matched.group('csv')

@@ -8,6 +8,7 @@ import ddt
 from parserz import parser
 from logz import log as logging
 from htmlrunner import HTMLRunner
+from filez import file
 
 from runnerz.utils.ensurez import ensure_type
 from runnerz.actions import BUILD_IN_FUNCTIONS, COMPARE_FUNCS
@@ -125,7 +126,8 @@ class Runner(object):
 
     def _should_skip(self, obj: (models.Step, models.Case)):
         skip = obj._skip
-        if isinstance(skip, bool):
+        if not isinstance(skip, str):
+            skip = True if skip else False
             return skip, f'skip={skip}'
 
         if isinstance(skip, str):
@@ -138,10 +140,10 @@ class Runner(object):
                 reason = f'skip表达式 {skip} 出错'
                 logging.info('跳过步骤:', obj._name, reason)
                 return True
-        if skip:
-            reason = f'skip={parsed_expr}'
-            logging.info('跳过步骤:', obj._name, reason)
-            return True, reason
+            if skip:
+                reason = f'skip={parsed_expr}'
+                logging.info('跳过步骤:', obj._name, reason)
+                return True, reason
         return False, 'skip=False'
 
     def _get_step_target_function(self, step):
@@ -225,14 +227,42 @@ class UnittestRunner(Runner):
         for step in case._steps:
             self.run_step(step)
 
+    def _parse_parameters(self, parameters: list) -> tuple:
+        """解析parameters中的变量和数据"""
+        line = parameters[0]
+        keys, data = tuple(line.items())[0]
+        if isinstance(data, str):
+            matched = re.match(CSV_REGEX, data)
+            if not matched:
+                raise ValueError(f'参数化不支持: {data} 形式')
+            csv_file = matched.group('csv')
+            data = file.load(csv_file)
+            data = data[1:]  # 舍弃标题行
+            print('数据', data)
+        keys = keys.split('-')
+        return keys, data
+
     def build_case(self, index: int, case: models.Case):
         run_case = self.run_case
+        context = self._context
+        parameters = case._parameters
+        if parameters:
+            keys, data = self._parse_parameters(parameters)
 
-        def _test_method(self):
-            nonlocal case
-            run_case(case)
+            def _test_method(self, values):
+                nonlocal case
+                nonlocal context
 
-        test_method = _test_method
+                key_values = dict(zip(keys, values))
+                context.register_variables(key_values)
+                run_case(case)
+            test_method = ddt.data(*data)(_test_method)
+        else:
+            def _test_method(self):
+                nonlocal case
+                run_case(case)
+            test_method = _test_method
+
         test_method.__name__ = f'test_method_{index + 1}'
         test_method.__doc__ = test_method.name = case._name
         test_method.tags = case._tags
@@ -255,7 +285,7 @@ class UnittestRunner(Runner):
             test_method = self.build_case(index, case)
             setattr(TestClass, f'test_method_{index + 1}', test_method)
 
-        # TestClass = ddt.ddt(TestClass)
+        TestClass = ddt.ddt(TestClass)
         TestClass.__doc__ = suite._name # suite名
 
         test_suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestClass)
