@@ -12,6 +12,17 @@ config:
 variables:
   d: 300
 
+keywords:
+  open:
+    docs: 描述
+    args: [a,b]
+    skip: True
+    steps:
+      - log $a
+      - log $b
+    return: $b
+
+
 tests:
   - name: 接口测试用例
     skip: True
@@ -76,6 +87,7 @@ tests:
               url: {type: string}
 
   - name: 测试用例5
+    skip: True
 #    parameters:
 #      - a-b:
 #        - [1,2]
@@ -87,3 +99,7 @@ tests:
       params:
         a: $a
         b: $b
+  - name: 测试用例6
+    open:
+      - 3
+      - 5

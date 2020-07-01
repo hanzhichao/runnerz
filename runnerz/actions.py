@@ -12,8 +12,10 @@ from runnerz.utils.ensurez import ensure_type
 
 
 def log(data: (str, list, dict), context):
-    return logging.info(data)
-
+    if isinstance(data, list):
+        logging.info(*data)  # todo
+    else:
+        logging.info(data)
 
 def request(data: dict, context):
     ensure_type(data, dict)

@@ -32,4 +32,25 @@ def test_unittest_runner():
     case = suite._cases[2]
     step = case._steps[0]
     runner = UnittestRunner()
-    runner.run(suite)
+    runner.run_suite(suite)
+
+
+def test_step_format_data():
+    step = models.Step('log $a')
+    assert step._target == 'log'
+    assert step._kwargs == '$a'
+
+
+def test_keyword():
+    data = {
+        'open': {
+            'docs': '描述',
+            'args': ['a', 'b'],
+            'steps': ['log $a', 'log $b'],
+            'return': '$b'
+        }
+    }
+    keyword = models.Keyword('open', data.get('open'))
+    assert keyword._steps[0]._target == 'log'
+    assert keyword._steps[0]._kwargs == '$a'
+

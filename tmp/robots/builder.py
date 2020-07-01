@@ -47,25 +47,25 @@ import types
 #
 #
 # class KeywordBuilder(object):
-#     def build_keyword(self, name: str, attrs: dict) -> dict:
-#         doc = attrs.get('Documention')
-#         arg_names = attrs.get('Arguments', [])
-#         steps = attrs.get('Steps', [])
-#         func_return = attrs.get('Return')
-#
-#         def func(*args):
-#             kwargs = dict(zip(arg_names, args))
-#             locals().update(kwargs)
-#             for step in steps:
-#                 step.run(locals(), step)
-#             return locals().get(func_return)
-#
-#         func.__name__ = name
-#         func.__doc__ = doc
-#         return {name: func}
-#
-#     def build_keywords(self, keywords: dict) -> list:
-#         return [self.build_keyword(name, attrs) for name, attrs in keywords.items()]
+    def build_keyword(self, name: str, attrs: dict) -> dict:
+        doc = attrs.get('Documention')
+        arg_names = attrs.get('Arguments', [])
+        steps = attrs.get('Steps', [])
+        func_return = attrs.get('Return')
+
+        def func(*args):
+            kwargs = dict(zip(arg_names, args))
+            locals().update(kwargs)
+            for step in steps:
+                step.run(locals(), step)
+            return locals().get(func_return)
+
+        func.__name__ = name
+        func.__doc__ = doc
+        return {name: func}
+
+    def build_keywords(self, keywords: dict) -> list:
+        return [self.build_keyword(name, attrs) for name, attrs in keywords.items()]
 
 
 class TestSuiteBuilder(object):
