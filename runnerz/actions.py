@@ -1,14 +1,14 @@
-# import requestz as requests
 from operator import eq, gt, lt, ge, le
 import re
 
 import requests
+import requestz
 from dubboz import Dubbo
 from logz import log as logging
 from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 
-from runnerz.utils.ensurez import ensure_type
+from runnerz.ensurez import ensure_type
 
 
 def log(data: (str, list, dict), context):
@@ -17,8 +17,14 @@ def log(data: (str, list, dict), context):
     else:
         logging.info(data)
 
-def request(data: dict, context):
-    ensure_type(data, dict)
+
+def request(data: (list, dict), context):
+    ensure_type(data, (list, dict))
+    if isinstance(data, list):
+        method, url, *_data = data
+        data = {'method': method, 'url': url}
+        if _data:
+            [data.update(item) for item in _data if isinstance(item, dict)]
 
     _session = context._variables.get('_session')
     base_url = context._variables.get('_base_url')
@@ -85,13 +91,15 @@ def jsonschema(instance, schema):
 BUILD_IN_FUNCTIONS = {
     'request': request,
     'log': log,
-    'dubbo': dubbo
+    'dubbo': dubbo,
+    'requestz': requestz,
 }
 
 
 COMPARE_FUNCS = dict(
     eq=eq, gt=gt, lt=lt, ge=ge, le=le,
-    len_eq=lambda x, y: len(x) == len(y),
+    len_eq=lambda x, y: len(x) == int(y),
+    len_gt=lambda x, y: len(x) > int(y),
     str_eq=lambda x, y: str(x) == str(y),
     type_match=lambda x, y: isinstance(x, y),
     regex_match=lambda x, y: re.match(y, x),

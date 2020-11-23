@@ -52,7 +52,7 @@ simple runner like robot framework and httprunner
 - [ ] 运行jmeter
 - [ ] 运行robot
 - [x] dubbo支持
-- [ ]自定义keywords
+- [x]自定义keywords
 
 
 由reportz支持

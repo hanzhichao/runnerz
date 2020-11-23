@@ -46,7 +46,7 @@ import types
 #
 #
 #
-# class KeywordBuilder(object):
+class KeywordBuilder(object):
     def build_keyword(self, name: str, attrs: dict) -> dict:
         doc = attrs.get('Documention')
         arg_names = attrs.get('Arguments', [])

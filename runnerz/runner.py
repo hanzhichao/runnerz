@@ -11,7 +11,7 @@ from logz import log as logging
 from htmlrunner import HTMLRunner
 from filez import file
 
-from runnerz.utils.ensurez import ensure_type
+from runnerz.ensurez import ensure_type
 from runnerz.actions import BUILD_IN_FUNCTIONS, COMPARE_FUNCS
 from runnerz import models
 
@@ -199,7 +199,10 @@ class Runner(object):
     def _run_step(self, step, context):
         function, kwargs = self._get_step_target_function(step)
 
+        context.register_variables({'kwargs': kwargs})
         result = function(kwargs, context)  # todo 每个函数需要两个变量
+        context.register_variables({'result': result})
+
         if step._extract:
             self.do_extract(step._extract)
         if step._validate:
@@ -331,3 +334,6 @@ class HTMLTestRunner(UnittestRunner):
         runner = HTMLRunner()
         result = runner.run(test_suite)
         return result
+
+
+runner = UnittestRunner()

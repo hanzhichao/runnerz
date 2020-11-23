@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: runnerz
-Version: 0.10
+Version: 0.11
 Summary: simple runner like robot framework and httprunner
 Home-page: https://github.com/hanzhichao/runnerz
 Author: Han Zhichao
@@ -48,7 +48,7 @@ Description: # Runnerz
         - [x] 根据条件跳过用例, skip表达式
         - [ ] merge config
         - [x] 多级steps
-        - [ ] 支持ddt
+        - [x] 支持ddt
         - [ ] 支持if/else/switch/while
         - [ ] args
         - [ ] options
@@ -60,6 +60,7 @@ Description: # Runnerz
         - [ ] 运行jmeter
         - [ ] 运行robot
         - [x] dubbo支持
+        - [x]自定义keywords
         
         
         由reportz支持

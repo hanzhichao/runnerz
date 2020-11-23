@@ -11,6 +11,9 @@ config:
 
 variables:
   d: 300
+  params:
+    a: 1
+    b: 2
 
 keywords:
   open:
@@ -100,6 +103,22 @@ tests:
         a: $a
         b: $b
   - name: 测试用例6
+    skip: True
     open:
       - 3
       - 5
+  - name: 测试用例7
+#    skip: True
+    steps:
+      - "res=request post /post params=$params"
+      - log $result
+      - log $res.status_code
+  - name: 测试用例8
+    skip: True
+    steps:
+      - request:
+          - Get
+          - /get
+          - params:
+              a: 1
+              b: 2

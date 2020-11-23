@@ -29,8 +29,6 @@ def test_runner():
 
 def test_unittest_runner():
     suite = models.Suite(data1)
-    case = suite._cases[2]
-    step = case._steps[0]
     runner = UnittestRunner()
     runner.run_suite(suite)
 
@@ -54,3 +52,8 @@ def test_keyword():
     assert keyword._steps[0]._target == 'log'
     assert keyword._steps[0]._kwargs == '$a'
 
+
+def test_one_line_step_extract():
+    data = 'res=request get /get'
+    step = models.Step(data)
+    print(step._data)

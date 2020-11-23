@@ -6,6 +6,7 @@ requirements.txt
 setup.py
 runnerz/__init__.py
 runnerz/actions.py
+runnerz/ensurez.py
 runnerz/models.py
 runnerz/runner.py
 runnerz.egg-info/PKG-INFO

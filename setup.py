@@ -35,7 +35,7 @@ setup(
     packages=find_packages(include=['runnerz']),
     setup_requires=setup_requirements,
     url='https://github.com/hanzhichao/runnerz',
-    version='0.10',
+    version='0.11',
     zip_safe=True,
-    install_requires=['logz', 'dubboz', 'filez', 'requests', 'jsonschema', 'parserz', 'htmlrunner']
+    install_requires=['logz', 'dubboz', 'filez', 'requests', 'jsonschema', 'parserz', 'htmlrunner', 'ddt']
 )
