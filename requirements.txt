@@ -17,7 +17,7 @@ more-itertools==8.4.0
 packaging==20.4
 parserz==0.14
 pluggy==0.13.1
-py==1.9.0
+py==1.10.0
 pycurl==7.43.0.5
 pyparsing==2.4.7
 pyrsistent==0.16.0
